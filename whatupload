@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+import os
+import argparse
+import mechanize
+import ConfigParser
+
+import transcode
+import upload
+
+tracker = 'whatcd'
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('release_url', help='the URL where the release is located')
+    parser.add_argument('flac_dir', help='the location of the FLAC files')
+
+    parser.add_argument('-u', '--username', help='your username on What.CD')
+    parser.add_argument('-p', '--password', help='your password on What.CD')
+
+    parser.add_argument('--config', help='the location of the configuration file (default: ~/.whatupload)', \
+                        default=os.path.expanduser('~/.whatupload'))
+
+    args = parser.parse_args()
+
+    config = ConfigParser.SafeConfigParser()
+    try:
+        config.read(args.config)
+    except:
+        config.add_section(tracker)
+        if args.username and args.password:
+            config.set(tracker, 'username', args.username)
+            config.set(tracker, 'password', args.password)
+        else:
+            raise Exception('You must specify a username and password.')
+        config.write(open(args.config, 'w'))
+    finally:
+        username = config.get(tracker, 'username')
+        password = config.get(tracker, 'password')
+
+    browser = upload.login(username, password)
+    release_info = upload.get_release_info(args.release_url, browser)
+    codecs = release_info['required_codecs']
+    for codec in codecs:
+        transcode_dir = transcode.transcode(args.flac_dir, codec)
+        upload.upload(transcode_dir, release_info)
+
+if __name__ == "__main__":
+    main()
