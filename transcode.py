@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import os
+import re
+import shutil
 import fnmatch
 import threading
 import subprocess
@@ -40,19 +42,13 @@ class Transcode(threading.Thread):
             os.makedirs(os.path.dirname(transcode_file))
 
         # determine the correct transcoding process
-        transcode_args = {
-            'FLAC' : self.flac_file,
-            'FILE' : transcode_file,
-            'OPTS' : encoders[codec]['opts']
-        }
+        flac_decoder = 'flac -dc -- "%(FLAC)s"'
 
-        flac_decoder = 'flac -dc -- %(FLAC)s'
-
-        lame_encoder = 'lame -S %(OPTS)s - %(FILE)s.mp3'
-        ogg_encoder = 'oggenc -Q %(OPTS)s -o %(FILE)s.ogg -'
-        ffmpeg_encoder = 'ffmpeg %(OPTS)s %(FILE)s.m4a'
-        nero_encoder = 'neroAacEnc %(OPTS)s -if - -of %(FILE)s.m4a'
-        flac_encoder = 'flac %(OPTS)s -o %(FILE)s.flac -'
+        lame_encoder = 'lame -S %(OPTS)s - "%(FILE)s"'
+        ogg_encoder = 'oggenc -Q %(OPTS)s -o "%(FILE)s" -'
+        ffmpeg_encoder = 'ffmpeg %(OPTS)s "%(FILE)s"'
+        nero_encoder = 'neroAacEnc %(OPTS)s -if - -of "%(FILE)s"'
+        flac_encoder = 'flac %(OPTS)s -o "%(FILE)s" -'
 
         dither_command = 'sox -t wav - -b 16 -r 44100 -t wav -'
 
@@ -63,23 +59,50 @@ class Transcode(threading.Thread):
 
         if encoders[self.codec]['enc'] == 'lame':
             transcoding_steps.append(lame_encoder)
+            transcode_file += ".mp3"
         elif encoders[self.codec]['enc'] == 'oggenc':
             transcoding_steps.append(ogg_encoder)
+            transcode_file += ".ogg"
         elif encoders[self.codec]['enc'] == 'ffmpeg':
             transcoding_steps.append(ffmpeg_encoder)
+            transcode_file += ".alac"
         elif encoders[self.codec]['enc'] == 'neroAacEnc':
             transcoding_steps.append(nero_encoder)
+            transcode_file += ".m4a"
         elif encoders[self.codec]['enc'] == 'flac':
             transcoding_steps.append(flac_encoder)
+            transcode_file += ".flac"
+
+        transcode_args = {
+            'FLAC' : self.flac_file,
+            'FILE' : transcode_file,
+            'OPTS' : encoders[self.codec]['opts']
+        }
 
         transcode_command = ' | '.join(transcoding_steps) % transcode_args
+
+        if self.dither and self.codec == 'FLAC':
+            # for some reason, FLAC | SoX | FLAC does not work.
+            # use files instead.
+            transcode_args['TEMP'] = self.flac_file + ".wav"
+            transcode_command = ' | '.join([flac_decoder, dither_command]) % transcode_args \
+                    + ' > "%(TEMP)s"; ' % transcode_args + flac_encoder % transcode_args + \
+                    ' < "%(TEMP)s"; rm "%(TEMP)s"' % transcode_args
+            print transcode_command
         
         # transcode the file
-        os.system(escape(transcode_command))
+        os.system(transcode_command)
 
         # tag the file
         transcode_info = mediafile.MediaFile(transcode_file)
-        transcode_info.mgfile.tags = flac_info.mgfile.tags
+        skip = ['format', 'type', 'bitrate', 'mgfile', 'save']
+        for attribute in dir(flac_info):
+            if not attribute.startswith('_') and attribute not in skip:
+                try:
+                    setattr(transcode_info, attribute, getattr(flac_info, attribute))
+                except:
+                    print attribute
+                    continue
         transcode_info.save()
 
         self.cv.acquire()
@@ -88,7 +111,30 @@ class Transcode(threading.Thread):
 
         return 0
 
-def transcode(flac_dir, codec, max_threads=cpu_count()):
+def get_transcode_dir(flac_dir, codec, dither, output_dir=None):
+    if output_dir is None:
+        transcode_dir = flac_dir
+    else:
+        transcode_dir = output_dir + os.path.basename(flac_dir)
+
+    if 'FLAC' in flac_dir:
+        transcode_dir = re.sub(re.compile('FLAC', re.I), codec, transcode_dir)
+    else:
+        transcode_dir = transcode_dir + " (" + codec + ")"
+        if codec != 'FLAC':
+            transcode_dir = re.sub(re.compile('FLAC', re.I), '', transcode_dir)
+    if dither:
+        if '24' in flac_dir and '96' in flac_dir:
+            # XXX: theoretically, this could replace part of the album title too.
+            # e.g. "24 days in 96 castles - [24-96]" would become "16 days in 44 castles - [16-44]"
+            transcode_dir = re.sub(re.compile('24', re.I), '16', transcode_dir)
+            transcode_dir = re.sub(re.compile('96', re.I), '44', transcode_dir)
+        else:
+            transcode_dir += " [16-44]"
+
+    return transcode_dir
+
+def transcode(flac_dir, codec, max_threads=cpu_count(), output_dir=None):
     '''transcode a directory of FLACs to another format'''
     if codec not in encoders.keys():
         return None
@@ -125,7 +171,7 @@ def transcode(flac_dir, codec, max_threads=cpu_count()):
         return flac_dir
 
     # make a new directory for the transcoded files
-    transcode_dir = get_directory_name(flac_dir, codec)
+    transcode_dir = get_transcode_dir(flac_dir, codec, dither, output_dir)
     if not os.path.exists(transcode_dir):
         os.makedirs(transcode_dir)
 

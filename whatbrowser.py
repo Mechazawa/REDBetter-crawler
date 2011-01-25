@@ -14,4 +14,5 @@ class WhatBrowser(mechanize.Browser):
         response = self.submit()
 
     def get_release_info(self, release_url):
-        pass
+        self.open(release_url)
+        return release_url
