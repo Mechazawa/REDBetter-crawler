@@ -5,7 +5,7 @@ import mechanize
 import ConfigParser
 
 import transcode
-import upload
+import whatbrowser
 
 tracker = 'whatcd'
 
@@ -37,8 +37,8 @@ def main():
         username = config.get(tracker, 'username')
         password = config.get(tracker, 'password')
 
-    browser = upload.login(username, password)
-    release_info = upload.get_release_info(args.release_url, browser)
+    browser = whatbrowser.WhatBrowser(username, password)
+    release_info = browser.get_release_info(args.release_url, browser)
     codecs = release_info['required_codecs']
     for codec in codecs:
         transcode_dir = transcode.transcode(args.flac_dir, codec)
