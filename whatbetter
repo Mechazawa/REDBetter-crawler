@@ -10,11 +10,8 @@ import whatbrowser
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('release_urls', nargs='+', help='the URL where the release is located')
-
-    parser.add_argument('--data-dir', help='the directory where your files are stored', default=os.getcwd())
-    parser.add_argument('--torrent-dir', help='the directory where your torrents should be saved (i.e., your watch folder)', default=os.getcwd())
-
+    parser.add_argument('release_urls', nargs='*', help='the URL where the release is located')
+    parser.add_argument('-a', '--auto', help='attempt to automatically find transcode candidates')
     parser.add_argument('--config', help='the location of the configuration file (default: ~/.whatbetter)', \
                         default=os.path.expanduser('~/.whatbetter'))
 
@@ -43,14 +40,22 @@ def main():
 
     browser = whatbrowser.WhatBrowser(username, password, passkey=passkey, data_dir=data_dir, torrent_dir=torrent_dir)
 
-    for release_url in args.release_urls:
-        release = browser.get_release(release_url)
+    if args.auto:
+        releases = browser.transcode_candidates()
+    elif len(args.release_urls) == 0:
+        print("No release urls specified; assuming --auto")
+        releases = browser.transcode_candidates()
+    else:
+        releases = [browser.get_release(url) for url in args.release_urls]
+
+    for release in releases:
         codecs = release.formats_needed()
         print("Release found: %s" % release.title)
         print("Formats needed: %s" % ', '.join(codecs))
+        print("Editions: %s" % len(release.editions))
 
-        for codec in codecs:
-            release.add_format(codec)
+        #for codec in codecs:
+            #release.add_format(codec)
 
 if __name__ == "__main__":
     main()

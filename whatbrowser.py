@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import os
 import re
+import json
+import urlparse
 import tempfile
 import lxml.html
 import lxml.html.soupparser
@@ -58,7 +60,12 @@ class WhatBrowser(mechanize.Browser):
             return self._response
 
     def get_release(self, release_url_or_id):
-        releaseid = re.search('[0-9]+$', release_url_or_id).group(0)
+        if '?' in release_url_or_id:
+            # it's a url; extract the useful part
+            query_string = urlparse.urlparse(release_url_or_id).query
+            releaseid = urlparse.parse_qs(query_string)['id'][0]
+        else:
+            releaseid = re.search('[0-9]+$', release_url_or_id).group(0)
         return Release(self, releaseid)
 
     def get_torrent(self, torrent_url_or_id):
@@ -66,8 +73,8 @@ class WhatBrowser(mechanize.Browser):
         return Torrent(self, torrentid)
 
     def transcode_candidates(self):
-        self.goto('http://what.cd/better.php?method=snatch')
-        doc = parse_html(self._response.read())
+        response = self.goto('http://what.cd/better.php?method=snatch')
+        doc = parse_html(response.read())
 
         for release_url in doc.cssselect('.thin a'):
             if release_url.get('title') == 'View Torrent':
@@ -99,6 +106,25 @@ class Release:
             self.title = result.group(1)
             self.year = result.group(2)
             self.release_type = result.group(3)
+
+        response = self.browser.goto(self.upload_url).read()
+        doc = parse_html(response)
+        self.editions = []
+        for json_editions in doc.cssselect('#json_remasters'):
+            # get unique releases
+            editions = json.loads(json_editions.get('value'))
+            seen = set()
+            for edition in editions:
+                edition_info = {
+                    'title' : edition['RemasterTitle'],
+                    'catalog_number' : edition['RemasterCatalogueNumber'],
+                    'record_label' : edition['RemasterRecordLabel'],
+                    'year' : edition['RemasterYear']
+                }
+                identifier = ''.join(''.join((k,v)) for k,v in edition_info.iteritems())
+                if identifier not in seen:
+                    self.editions.append(edition_info)
+                    seen.add(identifier)
 
         try:
             self.album_info = doc.cssselect('html body#torrents div#wrapper div#content div.thin div.main_column div.box div.body')[0].text_content()
@@ -140,6 +166,23 @@ class Release:
 
         # add the torrent
         self.browser.find_control('file_input').add_file(open(torrent), 'text/plain', os.path.basename(torrent))
+
+        # specify edition information
+        if len(self.editions) > 0:
+            if len(self.editions) > 1:
+                #TODO select edition
+                return False
+            edition = self.editions[0]
+            browser.find_control('remaster').set_single('1')
+    
+            if edition['year']:
+                self.browser['remaster_year'] = edition['year']
+            if edition['title']:
+                self.browser['remaster_title'] = edition['title']
+            if edition['catalog_number']:
+                self.browser['remaster_catalogue_number'] = edition['catalog_number']
+            if edition['record_label']:
+                self.browser['remaster_record_label'] = edition['record_label']
 
         # specify format
         self.browser.find_control('format').set('1', encoders[codec]['format'])
