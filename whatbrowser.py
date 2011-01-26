@@ -173,7 +173,7 @@ class Release:
                 #TODO select edition
                 return False
             edition = self.editions[0]
-            browser.find_control('remaster').set_single('1')
+            self.browser.find_control('remaster').set_single('1')
     
             if edition['year']:
                 self.browser['remaster_year'] = edition['year']
