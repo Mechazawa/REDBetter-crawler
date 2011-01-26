@@ -221,7 +221,7 @@ class Torrent:
                     result = info.split(' / ')
                     self.format = result[0].strip()
                     self.bitrate = result[1].strip()
-                    self.media = result[2].strip()
+                    self.media = result[-1].strip()
                     self.codec = get_codec(self.format, self.bitrate)
                     try:
                         scene = result[3]
