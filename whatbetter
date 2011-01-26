@@ -54,8 +54,8 @@ def main():
         print("Formats needed: %s" % ', '.join(codecs))
         print("Editions: %s" % len(release.editions))
 
-        #for codec in codecs:
-            #release.add_format(codec)
+        for codec in codecs:
+            release.add_format(codec)
 
 if __name__ == "__main__":
     main()
