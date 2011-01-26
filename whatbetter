@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import sys
 import argparse
 import mechanize
 import ConfigParser
@@ -7,42 +8,49 @@ import ConfigParser
 import transcode
 import whatbrowser
 
-tracker = 'whatcd'
-
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('release_url', help='the URL where the release is located')
-    parser.add_argument('flac_dir', help='the location of the FLAC files')
+    parser.add_argument('release_urls', nargs='+', help='the URL where the release is located')
 
-    parser.add_argument('-u', '--username', help='your username on What.CD')
-    parser.add_argument('-p', '--password', help='your password on What.CD')
+    parser.add_argument('--data-dir', help='the directory where your files are stored', default=os.getcwd())
+    parser.add_argument('--torrent-dir', help='the directory where your torrents should be saved (i.e., your watch folder)', default=os.getcwd())
 
-    parser.add_argument('--config', help='the location of the configuration file (default: ~/.whatupload)', \
-                        default=os.path.expanduser('~/.whatupload'))
+    parser.add_argument('--config', help='the location of the configuration file (default: ~/.whatbetter)', \
+                        default=os.path.expanduser('~/.whatbetter'))
 
     args = parser.parse_args()
 
     config = ConfigParser.SafeConfigParser()
     try:
+        open(args.config)
         config.read(args.config)
     except:
-        config.add_section(tracker)
-        if args.username and args.password:
-            config.set(tracker, 'username', args.username)
-            config.set(tracker, 'password', args.password)
-        else:
-            raise Exception('You must specify a username and password.')
+        config.add_section('whatcd')
+        config.set('whatcd', 'username', '')
+        config.set('whatcd', 'password', '')
+        config.set('whatcd', 'passkey', '')
+        config.set('whatcd', 'data_dir', '')
+        config.set('whatcd', 'torrent_dir', '')
         config.write(open(args.config, 'w'))
+        print('Please edit the configuration file: %s' % args.config)
+        sys.exit(2)
     finally:
-        username = config.get(tracker, 'username')
-        password = config.get(tracker, 'password')
+        username = config.get('whatcd', 'username')
+        password = config.get('whatcd', 'password')
+        passkey = config.get('whatcd', 'passkey')
+        data_dir = os.path.expanduser(config.get('whatcd', 'data_dir'))
+        torrent_dir = os.path.expanduser(config.get('whatcd', 'torrent_dir'))
 
-    browser = whatbrowser.WhatBrowser(username, password)
-    release = browser.get_release(args.release_url)
-    codecs = release.formats_needed()
-    for codec in codecs:
-        transcode_dir = transcode.transcode(args.flac_dir, codec)
-        release.add_format(transcode_dir, codec)
+    browser = whatbrowser.WhatBrowser(username, password, passkey=passkey, data_dir=data_dir, torrent_dir=torrent_dir)
+
+    for release_url in args.release_urls:
+        release = browser.get_release(release_url)
+        codecs = release.formats_needed()
+        print("Release found: %s" % release.title)
+        print("Formats needed: %s" % ', '.join(codecs))
+
+        for codec in codecs:
+            release.add_format(codec)
 
 if __name__ == "__main__":
     main()

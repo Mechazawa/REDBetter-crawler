@@ -6,6 +6,8 @@ import lxml.html
 import lxml.html.soupparser
 import mechanize
 
+import transcode
+
 encoders = {
     '320': {
         'format' : 'MP3',
@@ -34,8 +36,12 @@ encoders = {
 }
 
 class WhatBrowser(mechanize.Browser):
-    def __init__(self, username, password):
+    def __init__(self, username, password, **kwargs):
         mechanize.Browser.__init__(self)
+
+        self.tracker = "http://tracker.what.cd:34000/"
+        for kwarg, value in kwargs.items():
+            setattr(self, kwarg, value)
 
         self.set_handle_robots(False)
         self.open('http://what.cd/login.php')
@@ -77,6 +83,11 @@ class Release:
         self.retrieve_info()
         self.torrents = self.get_torrents()
         self.media = [t.media for t in self.torrents if t.codec == 'FLAC'][0]
+        folder = [t.folder for t in self.torrents if t.codec == 'FLAC'][0]
+        if folder.startswith('/'):
+            folder = folder[1:]
+        self.flac_dir = os.path.join(self.browser.data_dir, folder)
+        print self.flac_dir
 
     def retrieve_info(self):
         response = self.browser.goto(self.url).read()
@@ -119,12 +130,13 @@ class Release:
         formats_needed = [codec for codec in encoders.keys() if codec not in current_formats]
         return formats_needed
 
-    def add_format(self, transcode_dir, codec):
-        torrent = transcode.make_torrent(transcode_dir)
+    def add_format(self, codec):
+        transcode_dir = transcode.transcode(self.flac_dir, codec, output_dir=self.browser.data_dir)
+        torrent = transcode.make_torrent(transcode_dir, self.browser.torrent_dir, self.browser.tracker, self.browser.passkey)
 
         self.browser.goto(self.upload_url)
         # select the last form on the page
-        self.browser.select_form(nr=len(list(browser.forms()))-1) 
+        self.browser.select_form(nr=len(list(self.browser.forms()))-1) 
 
         # add the torrent
         self.browser.find_control('file_input').add_file(open(torrent), 'text/plain', os.path.basename(torrent))
@@ -175,17 +187,19 @@ class Torrent:
                         self.scene = False
 
         for filelist in doc.cssselect('#files_%s' % self.id):
-            print filelist.text_content()
             self.files = []
             for i, row in enumerate(filelist.cssselect('tr')):
                 if i == 0:
-                    self.folder = row.cssselect('td div')[0].text_content()
+                    for heading in row.cssselect('td div'):
+                        if heading.text_content().startswith('/'):
+                            self.folder = heading.text_content().strip()
+                            break
                     continue
                 self.files.append(row.cssselect('td')[0].text_content())
                 
     def download(self, output_dir=None):
         if output_dir is None:
-            output_dir = os.getcwd()
+            output_dir = self.browser.torrent_dir
         path = os.path.join(output_dir, self.get_filename())
         filename, headers = self.browser.urlretrieve(self.url, path)
         return filename

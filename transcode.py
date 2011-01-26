@@ -113,9 +113,9 @@ def get_transcode_dir(flac_dir, codec, dither, output_dir=None):
     if output_dir is None:
         transcode_dir = flac_dir
     else:
-        transcode_dir = output_dir + os.path.basename(flac_dir)
+        transcode_dir = os.path.join(output_dir, os.path.basename(flac_dir))
 
-    if 'FLAC' in flac_dir:
+    if 'FLAC' in flac_dir.upper():
         transcode_dir = re.sub(re.compile('FLAC', re.I), codec, transcode_dir)
     else:
         transcode_dir = transcode_dir + " (" + codec + ")"
@@ -187,7 +187,6 @@ def transcode(flac_dir, codec, max_threads=cpu_count(), output_dir=None):
 
     for t in threads:
         t.join()
-
     
     # copy other files
     for path, dirs, files in os.walk(flac_dir, topdown=False):
@@ -199,3 +198,16 @@ def transcode(flac_dir, codec, max_threads=cpu_count(), output_dir=None):
                 shutil.copy(os.path.join(path, name), d)
 
     return transcode_dir
+
+def make_torrent(input_dir, output_dir, tracker, passkey):
+    torrent = os.path.join(output_dir, os.path.basename(input_dir)) + ".torrent"
+    if not os.path.exists(os.path.dirname(torrent)):
+        os.path.makedirs(os.path.dirname(torrent))
+    torrent_command = 'mktorrent -p -a "%(tracker)s%(passkey)s/announce" -o "%(torrent)s" "%(input_dir)s"' % {
+        'tracker' : tracker,
+        'passkey' : passkey,
+        'torrent' : torrent,
+        'input_dir' : input_dir
+    }
+    subprocess.call(torrent_command, shell=True)
+    return torrent
