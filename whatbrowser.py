@@ -73,10 +73,12 @@ class Release:
         self.browser = browser
         self.id = releaseid
         self.url = 'http://what.cd/torrents.php?id=%s' % self.id
-        self.get_release_info()
+        self.upload_url = 'http://what.cd/upload.php?groupid=%s' % self.id
+        self.retrieve_info()
         self.torrents = self.get_torrents()
+        self.media = [t.media for t in self.torrents if t.codec == 'FLAC'][0]
 
-    def get_release_info(self):
+    def retrieve_info(self):
         response = self.browser.goto(self.url).read()
         doc = parse_html(response)
         for header in doc.cssselect('div#content div.thin h2'):
@@ -85,7 +87,12 @@ class Release:
             result = re.search('([^\[]+)\s\[([^\]]+)\]\s\[([^\]]+)\]', info)
             self.title = result.group(1)
             self.year = result.group(2)
-            self.type = result.group(3)
+            self.release_type = result.group(3)
+
+        try:
+            self.album_info = doc.cssselect('html body#torrents div#wrapper div#content div.thin div.main_column div.box div.body')[0].text_content()
+        except IndexError:
+            self.album_info = None
 
     def get_torrents(self):
         try:
@@ -95,8 +102,8 @@ class Release:
 
         torrents = []
 
-        self.browser.goto(self.url)
-        doc = parse_html(self.browser._response.read())
+        response = self.browser.goto(self.url)
+        doc = parse_html(response.read())
 
         for torrent_group in doc.cssselect('.group_torrent'):
             try:
@@ -107,19 +114,79 @@ class Release:
         
         return torrents
 
+    def formats_needed(self):
+        current_formats = [t.codec for t in self.get_torrents()]
+        formats_needed = [codec for codec in encoders.keys() if codec not in current_formats]
+        return formats_needed
+
+    def add_format(self, transcode_dir, codec):
+        torrent = transcode.make_torrent(transcode_dir)
+
+        self.browser.goto(self.upload_url)
+        # select the last form on the page
+        self.browser.select_form(nr=len(list(browser.forms()))-1) 
+
+        # add the torrent
+        self.browser.find_control('file_input').add_file(open(torrent), 'text/plain', os.path.basename(torrent))
+
+        # specify format
+        self.browser.find_control('format').set('1', encoders[codec]['format'])
+
+        # specify bitrate
+        self.browser.find_control('bitrate').set('1', encoders[codec]['bitrate'])
+
+        # specify media
+        self.browser.find_control('media').set('1', self.media)
+
+        # specify release description
+        self.browser['release_desc'] = 'Created with [url=http://github.com/zacharydenton/whatbetter/]whatbetter[/url].'
+
+        # submit the form
+        response = self.browser.submit()
+        return response
+
 class Torrent:
     def __init__(self, browser, torrentid):
         self.browser = browser
         self.id = torrentid
-        self.url = self.get_url()
+        self.url = 'http://what.cd/torrents.php?torrentid=%s' % self.id
+        self.retrieve_info()
 
-    def get_url(self):
-        pass
+    def retrieve_info(self):
+        response = self.browser.goto(self.url).read()
+        doc = parse_html(response)
+        for torrent_group in doc.cssselect('tr#torrent%s' % self.id):
+            for torrent_info in torrent_group.cssselect('td a'):
+                if torrent_info.text_content() in ['RP', 'PL']:
+                    continue
+                elif torrent_info.text_content() == 'DL':
+                    self.download_link = torrent_info.get('href')
+                else:
+                    info = torrent_info.text_content()[1:].strip() # trim leading char
+                    result = info.split(' / ')
+                    self.format = result[0].strip()
+                    self.bitrate = result[1].strip()
+                    self.media = result[2].strip()
+                    self.codec = get_codec(self.format, self.bitrate)
+                    try:
+                        scene = result[3]
+                        self.scene = True
+                    except IndexError:
+                        self.scene = False
 
+        for filelist in doc.cssselect('#files_%s' % self.id):
+            print filelist.text_content()
+            self.files = []
+            for i, row in enumerate(filelist.cssselect('tr')):
+                if i == 0:
+                    self.folder = row.cssselect('td div')[0].text_content()
+                    continue
+                self.files.append(row.cssselect('td')[0].text_content())
+                
     def download(self, output_dir=None):
         if output_dir is None:
             output_dir = os.getcwd()
-        path = os.path.join(output_dir, self.filename)
+        path = os.path.join(output_dir, self.get_filename())
         filename, headers = self.browser.urlretrieve(self.url, path)
         return filename
 

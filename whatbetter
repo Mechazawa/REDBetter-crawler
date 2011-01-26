@@ -38,11 +38,11 @@ def main():
         password = config.get(tracker, 'password')
 
     browser = whatbrowser.WhatBrowser(username, password)
-    release_info = browser.get_release_info(args.release_url, browser)
-    codecs = release_info['required_codecs']
+    release = browser.get_release(args.release_url)
+    codecs = release.formats_needed()
     for codec in codecs:
         transcode_dir = transcode.transcode(args.flac_dir, codec)
-        browser.upload(transcode_dir, release_info)
+        release.add_format(transcode_dir, codec)
 
 if __name__ == "__main__":
     main()
