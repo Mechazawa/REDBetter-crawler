@@ -85,9 +85,8 @@ class Transcode(threading.Thread):
             # for some reason, FLAC | SoX | FLAC does not work.
             # use files instead.
             transcode_args['TEMP'] = self.flac_file + ".wav"
-            transcode_command = ' | '.join([flac_decoder, dither_command]) % transcode_args \
-                    + ' > "%(TEMP)s"; ' % transcode_args + flac_encoder % transcode_args + \
-                    ' < "%(TEMP)s"; rm "%(TEMP)s"' % transcode_args
+            transcode_command = ''.join([flac_decoder, ' | ', dither_command, ' > "%(TEMP)s"; ', \
+                    flac_encoder, ' < "%(TEMP)s"; rm "%(TEMP)s"']) % transcode_args
             print transcode_command
         
         # transcode the file
@@ -101,7 +100,6 @@ class Transcode(threading.Thread):
                 try:
                     setattr(transcode_info, attribute, getattr(flac_info, attribute))
                 except:
-                    print attribute
                     continue
         transcode_info.save()
 

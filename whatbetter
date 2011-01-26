@@ -42,7 +42,7 @@ def main():
     codecs = release_info['required_codecs']
     for codec in codecs:
         transcode_dir = transcode.transcode(args.flac_dir, codec)
-        upload.upload(transcode_dir, release_info)
+        browser.upload(transcode_dir, release_info)
 
 if __name__ == "__main__":
     main()
