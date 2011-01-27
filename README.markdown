@@ -13,9 +13,9 @@ Installation
 ------------
 As an artifact of power, whatbetter requires that its would-be wielders pass a series of tests before use. This is all in the spirit of What.CD, of course.
 
-You're going to need Python 2.7 to run whatbetter. Anything less is unworthy of whatbetter's time.
+First of all, you're going to need Python to run whatbetter. Python 3 is unsupported due to the dependency on mechanize, which does not currently support Python 3.
 
-Once you've got Python 2.7, you need several modules: mechanize, mutagen, lxml, and BeautifulSoup. Try this:
+Once you've got Python installed, you need several modules: mechanize, mutagen, lxml, and BeautifulSoup. Try this:
 
     # pip install mechanize mutagen lxml BeautifulSoup
 
