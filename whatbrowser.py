@@ -121,7 +121,7 @@ class Release:
         response = self.browser.goto(self.url).read()
         doc = parse_html(response)
         for header in doc.cssselect('div#content div.thin h2'):
-            artist, info = header.text_content().split(' - ')
+            artist, info = header.text_content().split(' - ', 1)
             self.artist = artist
             result = re.search('([^\[]+)\s\[([^\]]+)\]\s\[([^\]]+)\]', info)
             self.title = result.group(1)
@@ -153,11 +153,6 @@ class Release:
             self.album_info = None
 
     def get_torrents(self):
-        try:
-            return self.torrents
-        except:
-            pass
-
         torrents = []
 
         response = self.browser.goto(self.url)
@@ -233,13 +228,15 @@ class Torrent:
         doc = parse_html(response)
         for torrent_group in doc.cssselect('tr#torrent%s' % self.id):
             for torrent_info in torrent_group.cssselect('td a'):
-                if torrent_info.text_content() in ['RP', 'PL']:
+                if torrent_info.text_content() in ['RP', 'ED', 'RM', 'PL']:
                     continue
                 elif torrent_info.text_content() == 'DL':
                     self.download_link = torrent_info.get('href')
                 else:
                     info = torrent_info.text_content()[1:].strip() # trim leading char
                     result = info.split(' / ')
+                    if 'Reported' in result:
+                        result.pop()
                     self.format = result[0].strip()
                     self.bitrate = result[1].strip()
                     self.media = result[-1].strip()

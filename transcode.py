@@ -51,7 +51,7 @@ class Transcode(threading.Thread):
         nero_encoder = 'neroAacEnc %(OPTS)s -if - -of "%(FILE)s" > /dev/null 2> /dev/null'
         flac_encoder = 'flac %(OPTS)s -o "%(FILE)s" - > /dev/null 2> /dev/null'
 
-        dither_command = 'sox -t wav - -b 16 -r 44100 --norm -t wav -'
+        dither_command = 'sox -t wav - -b 16 -r 44100 -t wav -'
 
         transcoding_steps = [flac_decoder]
 
@@ -90,8 +90,7 @@ class Transcode(threading.Thread):
                     flac_encoder, ' < "%(TEMP)s"; rm "%(TEMP)s"']) % transcode_args
         
         # transcode the file
-        subprocess.Popen(shlex.split(transcode_command), stdout=subprocess.PIPE,
-                stderr=PIPE)
+        os.system(transcode_command)
 
         # tag the file
         transcode_info = mediafile.MediaFile(transcode_file)
@@ -160,7 +159,7 @@ def transcode(flac_dir, codec, max_threads=cpu_count(), output_dir=None):
     bits_per_sample = flac_info.mgfile.info.bits_per_sample
 
     # check if we need to dither to 16/44
-    if sample_rate > 44100 or bits_per_sample > 16:
+    if sample_rate > 48000 or bits_per_sample > 16:
         dither = True
     else:
         dither = False

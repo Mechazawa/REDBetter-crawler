@@ -4,6 +4,7 @@ import sys
 import argparse
 import mechanize
 import ConfigParser
+import cPickle as pickle
 
 import transcode
 import whatbrowser
@@ -13,8 +14,10 @@ def main():
     parser.add_argument('release_urls', nargs='*', help='the URL where the release is located')
     parser.add_argument('-A', '--auto', action='store_true', help='attempt to automatically find transcode candidates')
     parser.add_argument('-a', '--all', action='store_true', help='search through all snatched torrents for transcode candidates')
-    parser.add_argument('--config', help='the location of the configuration file (default: ~/.whatbetter)', \
-                        default=os.path.expanduser('~/.whatbetter'))
+    parser.add_argument('--config', help='the location of the configuration file (default: ~/.whatbetter/config)', \
+            default = os.path.expanduser('~/.whatbetter/config'))
+    parser.add_argument('--cache', help='the location of the cache (default: ~/.whatbetter/cache)', \
+                        default=os.path.expanduser('~/.whatbetter/cache'))
 
     args = parser.parse_args()
 
@@ -23,6 +26,8 @@ def main():
         open(args.config)
         config.read(args.config)
     except:
+        if not os.path.exists(os.path.dirname(args.config)):
+            os.makedirs(os.path.dirname(args.config))
         config.add_section('whatcd')
         config.set('whatcd', 'username', '')
         config.set('whatcd', 'password', '')
@@ -53,11 +58,22 @@ def main():
     else:
         releases = (browser.get_release(url) for url in args.release_urls)
 
+    # cache
+    try:
+        seen = pickle.load(open(args.cache))
+    except:
+        seen = set()
+        pickle.dump(seen, open(args.cache, 'wb'))
+
     for release in releases:
+        if release.id in seen:
+            print("Skipped: %s" % release.title)
+            continue
+
         codecs = release.formats_needed()
+        print
         print("Release found: %s" % release.title)
         print("Formats needed: %s" % ', '.join(codecs))
-        print("Editions: %s" % len(release.editions))
 
         for codec in codecs:
             if os.path.exists(release.flac_dir):
@@ -65,6 +81,8 @@ def main():
                 release.add_format(codec)
             else:
                 print("Path not found - skipping: %s" % release.flac_dir)
+        seen.add(release.id)
+        pickle.dump(seen, open(args.cache, 'wb'))
 
 if __name__ == "__main__":
     main()
