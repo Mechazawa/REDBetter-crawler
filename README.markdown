@@ -20,7 +20,7 @@ Furthermore, you need several external programs: mktorrent, flac, lame, oggenc, 
 
     # aptitude install mktorrent flac lame vorbis-tools ffmpeg
 
-For neroAacEnc, you need to download the encoder from http://www.nero.com/eng/downloads-nerodigital-nero-aac-codec.php, extract it, and place the binaries somewhere on your PATH.
+For neroAacEnc, you need to download the encoder from [nero](http://www.nero.com/eng/downloads-nerodigital-nero-aac-codec.php), extract it, and place the binaries somewhere on your PATH.
 
 At this point you may begin to speak with whatbetter. Perform the following command:
 
