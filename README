@@ -1,15 +1,14 @@
-usage: whatupload [-h] [-u USERNAME] [-p PASSWORD] [--config CONFIG]
-                  release_url flac_dir
+usage: whatbetter [-h] [-A] [-a] [--config CONFIG] [--cache CACHE]
+                  [release_urls [release_urls ...]]
 
 positional arguments:
-  release_url           the URL where the release is located
-  flac_dir              the location of the FLAC files
+  release_urls     the URL where the release is located
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -u USERNAME, --username USERNAME
-                        your username on What.CD
-  -p PASSWORD, --password PASSWORD
-                        your password on What.CD
-  --config CONFIG       the location of the configuration file (default:
-                        ~/.whatupload)
+  -h, --help       show this help message and exit
+  -A, --auto       attempt to automatically find transcode candidates
+  -a, --all        search through all snatched torrents for transcode
+                   candidates
+  --config CONFIG  the location of the configuration file (default:
+                   ~/.whatbetter/config)
+  --cache CACHE    the location of the cache (default: ~/.whatbetter/cache)

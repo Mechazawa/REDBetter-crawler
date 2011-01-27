@@ -90,7 +90,10 @@ class Transcode(threading.Thread):
                     flac_encoder, ' < "%(TEMP)s"; rm "%(TEMP)s"']) % transcode_args
         
         # transcode the file
-        os.system(transcode_command)
+        try:
+            os.system(transcode_command)
+        except UnicodeEncodeError:
+            os.system(transcode_command.encode('utf-8'))
 
         # tag the file
         transcode_info = mediafile.MediaFile(transcode_file)

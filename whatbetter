@@ -47,17 +47,6 @@ def main():
     print('Logging in to What.CD...')
     browser = whatbrowser.WhatBrowser(username, password, passkey=passkey, data_dir=data_dir, torrent_dir=torrent_dir)
 
-    print('Searching for transcode candidates...')
-    if args.all:
-        releases = browser.snatched(format='FLAC')
-    elif args.auto:
-        releases = browser.transcode_candidates()
-    elif len(args.release_urls) == 0:
-        print("No release urls specified; assuming --auto")
-        releases = browser.transcode_candidates()
-    else:
-        releases = (browser.get_release(url) for url in args.release_urls)
-
     # cache
     try:
         seen = pickle.load(open(args.cache))
@@ -65,11 +54,18 @@ def main():
         seen = set()
         pickle.dump(seen, open(args.cache, 'wb'))
 
-    for release in releases:
-        if release.id in seen:
-            print("Skipped: %s" % release.title)
-            continue
+    print('Searching for transcode candidates...')
+    if args.all:
+        releases = browser.snatched(format='FLAC', skip=seen)
+    elif args.auto:
+        releases = browser.transcode_candidates(skip=seen)
+    elif len(args.release_urls) == 0:
+        print("No release urls specified; assuming --auto")
+        releases = browser.transcode_candidates(skip=seen)
+    else:
+        releases = (browser.get_release(url) for url in args.release_urls)
 
+    for release in releases:
         codecs = release.formats_needed()
         print
         print("Release found: %s" % release.title)
@@ -78,7 +74,10 @@ def main():
         for codec in codecs:
             if os.path.exists(release.flac_dir):
                 print('Adding format %s...' % codec)
-                release.add_format(codec)
+                try:
+                    release.add_format(codec)
+                except Exception as e:
+                    print "Error adding format %s: %s" % (codec, e)
             else:
                 print("Path not found - skipping: %s" % release.flac_dir)
         seen.add(release.id)

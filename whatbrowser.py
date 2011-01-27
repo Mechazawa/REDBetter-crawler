@@ -5,37 +5,38 @@ import json
 import urlparse
 import tempfile
 import lxml.html
-import lxml.html.soupparser
 import mechanize
+import lxml.html.soupparser
+from collections import OrderedDict
 
 import transcode
 
-encoders = {
-    '320': {
-        'format' : 'MP3',
-        'bitrate' : '320'
-        },
-    'V0': {
+encoders = OrderedDict((
+    ('V0', {
         'format' : 'MP3',
         'bitrate' : 'V0 (VBR)'
-        },
-    'V2': {
+        }),
+    ('320', {
+        'format' : 'MP3',
+        'bitrate' : '320'
+        }),
+    ('V2', {
         'format' : 'MP3', 
         'bitrate' : 'V2 (VBR)'
-        },
-    'Q8': {
+        }),
+    ('Q8', {
         'format' : 'Ogg Vorbis',
         'bitrate' : 'q8.x (VBR)'
-        },
-    'AAC': {
+        }),
+    ('AAC', {
         'format' : 'AAC',
         'bitrate': '320'
-        },
-    'FLAC': {
+        }),
+    ('FLAC', {
         'format': 'FLAC',
         'bitrate': 'Lossless'
-        }
-}
+        })
+))
 
 class WhatBrowser(mechanize.Browser):
     def __init__(self, username, password, **kwargs):
@@ -58,6 +59,29 @@ class WhatBrowser(mechanize.Browser):
                 doc.cssselect('div#userinfo ul#userinfo_username li '
                     + 'a.username')[0].get('href')).group(0)
 
+    def _parse_release_list(self, url, skip=None, params=None):
+        if params:
+            url += '&' + '&'.join('%s=%s' % (param, value) for param, value in params.iteritems())
+        response = self.goto(url)
+        done = False
+        while not done:
+            response = self.goto(url).read()
+            doc = parse_html(response)
+            for release_url in doc.cssselect('.thin a'):
+                if release_url.get('title') == 'View Torrent':
+                    url = release_url.get('href')
+                    if skip is not None:
+                        query_string = urlparse.urlparse(url).query
+                        releaseid = urlparse.parse_qs(query_string)['id'][0]
+                        if releaseid in skip:
+                            continue
+                    yield self.get_release(url)
+            try:
+                #snatched_url = [a.get('href') for a in doc.cssselect('.pager_next')][0]
+                url = list(doc.cssselect('.pager_next'))[0].get('href')
+            except IndexError:
+                done = True
+ 
     def goto(self, url, refresh=False):
         if self.geturl() != url or refresh:
             return self.open(url)
@@ -68,7 +92,12 @@ class WhatBrowser(mechanize.Browser):
         if '?' in release_url_or_id:
             # it's a url; extract the useful part
             query_string = urlparse.urlparse(release_url_or_id).query
-            releaseid = urlparse.parse_qs(query_string)['id'][0]
+            params = urlparse.parse_qs(query_string)
+            releaseid = params['id'][0]
+            if params.has_key('torrentid'):
+                torrentid = params['torrentid'][0]
+                return Release(self, releaseid, torrentid)
+                
         else:
             releaseid = re.search('[0-9]+$', release_url_or_id).group(0)
         return Release(self, releaseid)
@@ -77,42 +106,30 @@ class WhatBrowser(mechanize.Browser):
         torrentid = re.search('[0-9]+$', torrent_url_or_id).group(0)
         return Torrent(self, torrentid)
 
-    def transcode_candidates(self):
-        response = self.goto('http://what.cd/better.php?method=snatch')
-        doc = parse_html(response.read())
-
-        for release_url in doc.cssselect('.thin a'):
-            if release_url.get('title') == 'View Torrent':
-                url = release_url.get('href')
-                yield self.get_release(url)
+    def transcode_candidates(self, skip=None):
+        return self._parse_release_list('http://what.cd/better.php?method=snatch', skip)
     
-    def snatched(self, **kwargs):
-        snatched_url = 'http://what.cd/torrents.php?type=snatched&userid=%s' % self.userid
-        snatched_url += '&' + '&'.join('%s=%s' % (param, value) for param, value in
-                kwargs.iteritems())
-        done = False
-        while not done:
-            response = self.goto(snatched_url).read()
-            doc = parse_html(response)
-            for release_url in doc.cssselect('.thin a'):
-                if release_url.get('title') == 'View Torrent':
-                    url = release_url.get('href')
-                    yield self.get_release(url)
-            try:
-                snatched_url = doc.cssselect('div.linkbox a.pager_next')[0].get('href')
-            except:
-                done = True
+    def snatched(self, skip=None, **params):
+        return self._parse_release_list('http://what.cd/torrents.php?type=snatched&userid=%s' % self.userid, skip, params)
 
 class Release:
-    def __init__(self, browser, releaseid):
+    def __init__(self, browser, releaseid, torrentid=None):
         self.browser = browser
         self.id = releaseid
+        self.torrentid = torrentid
         self.url = 'http://what.cd/torrents.php?id=%s' % self.id
         self.upload_url = 'http://what.cd/upload.php?groupid=%s' % self.id
         self.retrieve_info()
         self.torrents = self.get_torrents()
-        self.media = [t.media for t in self.torrents if t.codec == 'FLAC'][0]
-        folder = [t.folder for t in self.torrents if t.codec == 'FLAC'][0]
+        if self.torrentid is not None:
+            self.torrent = [t for t in self.torrents if t.id == torrentid][0]
+        else:
+            try:
+                self.torrent = [t for t in self.torrents if t.codec == 'FLAC'][0]
+            except IndexError:
+                self.torrents = list(self.torrents)[0]
+        self.media = self.torrent.media
+        folder = self.torrent.folder
         if folder.startswith('/'):
             folder = folder[1:]
         self.flac_dir = os.path.join(self.browser.data_dir, folder)
@@ -162,7 +179,7 @@ class Release:
             try:
                 torrentid = torrent_group.get('id').replace('torrent', '')
                 torrents.append(Torrent(self.browser, torrentid))
-            except:
+            except Exception as e:
                 continue
         
         return torrents
@@ -187,8 +204,11 @@ class Release:
         if len(self.editions) > 0:
             if len(self.editions) > 1:
                 #TODO select edition
-                return False
-            edition = self.editions[0]
+                raise NotImplementedError('Releases with more than one edition are currently unsupported.')
+            try:
+                edition = self.torrent.edition
+            except:
+                edition = self.editions[0]
             self.browser.find_control('remaster').set_single('1')
     
             if edition['year']:
@@ -221,6 +241,7 @@ class Torrent:
         self.browser = browser
         self.id = torrentid
         self.url = 'http://what.cd/torrents.php?torrentid=%s' % self.id
+        self.folder = None
         self.retrieve_info()
 
     def retrieve_info(self):
@@ -257,6 +278,9 @@ class Torrent:
                             break
                     continue
                 self.files.append(row.cssselect('td')[0].text_content())
+        if not self.folder and len(self.files) == 1:
+            self.folder = self.files[0]
+            print(self.folder)
                 
     def download(self, output_dir=None):
         if output_dir is None:
