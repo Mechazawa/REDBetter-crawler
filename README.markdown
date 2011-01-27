@@ -1,3 +1,6 @@
+whatbetter
+==========
+
 Introduction
 ------------
 whatbetter is a script which automatically transcodes and uploads FLACs on What.CD.
@@ -43,21 +46,21 @@ The username and password are your What.CD login credentials. The passkey is you
 
 Usage
 -----
-usage: whatbetter [-h] [-A] [-a] [--config CONFIG] [--cache CACHE]
-                  [release_urls [release_urls ...]]
-
-positional arguments:
-  release_urls     the URL where the release is located
-
-optional arguments:
-  -h, --help       show this help message and exit
-  -A, --auto       attempt to automatically find transcode candidates
-  -a, --all        search through all snatched torrents for transcode
-                   candidates
-  --config CONFIG  the location of the configuration file (default:
-                   ~/.whatbetter/config)
-  --cache CACHE    the location of the cache (default: ~/.whatbetter/cache)
-
+    usage: whatbetter [-h] [-A] [-a] [--config CONFIG] [--cache CACHE]
+                    [release_urls [release_urls ...]]
+    
+    positional arguments:
+    release_urls     the URL where the release is located
+    
+    optional arguments:
+    -h, --help       show this help message and exit
+    -A, --auto       attempt to automatically find transcode candidates
+    -a, --all        search through all snatched torrents for transcode
+                    candidates
+    --config CONFIG  the location of the configuration file (default:
+                    ~/.whatbetter/config)
+    --cache CACHE    the location of the cache (default: ~/.whatbetter/cache)
+    
 Examples
 --------
 To transcode and upload releases that are listed in the 'Snatch' section of better.php:
