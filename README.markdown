@@ -19,6 +19,12 @@ Once you've got Python installed, you need several modules: mechanize, mutagen, 
 
     # pip install mechanize mutagen lxml BeautifulSoup argparse
 
+Alternatively, if you have setuptools installed, you can do this (in the source directory):
+
+    # ./setup.py install
+
+This should theoretically install all required dependencies automatically.
+
 Furthermore, you need several external programs: mktorrent, flac, lame, oggenc, ffmpeg, and neroAacEnc. The method of installing these programs varies depending on your operating system, but if you're using something like Ubuntu you can do this:
 
     # aptitude install mktorrent flac lame vorbis-tools ffmpeg

@@ -3,7 +3,7 @@
 Installer script for whatbetter.
 '''
 
-from distutils.core import setup
+from setuptools import setup
 
 setup (
     name = "whatbetter",
@@ -17,7 +17,7 @@ setup (
                   'whatbrowser',
                   'ordereddict'],
     scripts = ['whatbetter'],
-    requires = ['mutagen',
+    install_requires = ['mutagen',
                 'mechanize',
                 'argparse',
                 'BeautifulSoup',
