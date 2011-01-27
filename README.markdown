@@ -15,9 +15,9 @@ As an artifact of power, whatbetter requires that its would-be wielders pass a s
 
 First of all, you're going to need Python to run whatbetter. Python 3 is unsupported due to the dependency on mechanize, which does not currently support Python 3.
 
-Once you've got Python installed, you need several modules: mechanize, mutagen, lxml, and BeautifulSoup. Try this:
+Once you've got Python installed, you need several modules: mechanize, mutagen, lxml, BeautifulSoup, and argparse. Try this:
 
-    # pip install mechanize mutagen lxml BeautifulSoup
+    # pip install mechanize mutagen lxml BeautifulSoup argparse
 
 Furthermore, you need several external programs: mktorrent, flac, lame, oggenc, ffmpeg, and neroAacEnc. The method of installing these programs varies depending on your operating system, but if you're using something like Ubuntu you can do this:
 
