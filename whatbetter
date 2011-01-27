@@ -11,8 +11,8 @@ import whatbrowser
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('release_urls', nargs='*', help='the URL where the release is located')
-    parser.add_argument('-A', '--auto', help='attempt to automatically find transcode candidates')
-    parser.add_argument('-a', '--all', help='search through all snatched torrents for transcode candidates')
+    parser.add_argument('-A', '--auto', action='store_true', help='attempt to automatically find transcode candidates')
+    parser.add_argument('-a', '--all', action='store_true', help='search through all snatched torrents for transcode candidates')
     parser.add_argument('--config', help='the location of the configuration file (default: ~/.whatbetter)', \
                         default=os.path.expanduser('~/.whatbetter'))
 
