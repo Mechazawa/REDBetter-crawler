@@ -87,7 +87,8 @@ class WhatBrowser(mechanize.Browser):
     
     def snatched(self, **kwargs):
         snatched_url = 'http://what.cd/torrents.php?type-snatched&userid=%s' % self.userid
-        snatched_url += '&'.join('%s=%s' % (param, value) for param, value in kwargs)
+        snatched_url += '&'.join('%s=%s' % (param, value) for param, value in
+                kwargs.iteritems())
         while not done:
             response = self.goto(snatched_url)
             doc = parse_html(response)
