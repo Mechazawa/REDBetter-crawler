@@ -53,9 +53,9 @@ class WhatBrowser(mechanize.Browser):
         self['password'] = password
         self.submit()
 
-		doc = parse_html(self._response.read())
-		self.userid = re.search('[0-9]+$', \
-				doc.cssselect('div#userinfo ul#userinfo_username li a.username')[0].get('href'))
+        doc = parse_html(self._response.read())
+        self.userid = re.search('[0-9]+$', \
+                doc.cssselect('div#userinfo ul#userinfo_username li a.username')[0].get('href'))
 
     def goto(self, url, refresh=False):
         if self.geturl() != url or refresh:
@@ -84,21 +84,21 @@ class WhatBrowser(mechanize.Browser):
             if release_url.get('title') == 'View Torrent':
                 url = release_url.get('href')
                 yield self.get_release(url)
-	
-	def snatched(self, **kwargs):
-		snatched_url = 'http://what.cd/torrents.php?type-snatched&userid=%s' % self.userid
-		snatched_url += '&'.join('%s=%s' % (param, value) for param, value in kwargs)
-		while not done:
-			response = self.goto(snatched_url)
-			doc = parse_html(response)
-			for release_url in doc.cssselect('.thin a'):
-				if release_url.get('title') == 'View Torrent':
-					url = release_url.get('href')
-					yield self.get_release(url)
-			try:
-				snatched_url = doc.cssselect('div.linkbox a.pager_next')[0].get('href')
-			except:
-				done = True
+    
+    def snatched(self, **kwargs):
+        snatched_url = 'http://what.cd/torrents.php?type-snatched&userid=%s' % self.userid
+        snatched_url += '&'.join('%s=%s' % (param, value) for param, value in kwargs)
+        while not done:
+            response = self.goto(snatched_url)
+            doc = parse_html(response)
+            for release_url in doc.cssselect('.thin a'):
+                if release_url.get('title') == 'View Torrent':
+                    url = release_url.get('href')
+                    yield self.get_release(url)
+            try:
+                snatched_url = doc.cssselect('div.linkbox a.pager_next')[0].get('href')
+            except:
+                done = True
 
 class Release:
     def __init__(self, browser, releaseid):
