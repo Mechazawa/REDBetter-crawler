@@ -11,13 +11,13 @@ The following command will scan through every FLAC you have ever downloaded, det
 
 Installation
 ------------
-As an artifact of power, whatbetter requires that its would-be wielder passes a series of tests before use. This is all in the spirit of What.CD, mind you.
+As an artifact of power, whatbetter requires that its would-be wielders pass a series of tests before use. This is all in the spirit of What.CD, of course.
 
 You're going to need Python 2.7 to run whatbetter. Anything less is unworthy of whatbetter's time.
 
-Once you've got Python 2.7, you need several modules: mechanize, mutagen, and BeautifulSoup. Try this:
+Once you've got Python 2.7, you need several modules: mechanize, mutagen, lxml, and BeautifulSoup. Try this:
 
-    # pip install mechanize mutagen BeautifulSoup
+    # pip install mechanize mutagen lxml BeautifulSoup
 
 Furthermore, you need several external programs: mktorrent, flac, lame, oggenc, ffmpeg, and neroAacEnc. The method of installing these programs varies depending on your operating system, but if you're using something like Ubuntu you can do this:
 
@@ -43,6 +43,17 @@ You've made it far! Congratulations. Open up the file ~/.whatbetter/config in a 
     torrent_dir =
 
 The username and password are your What.CD login credentials. The passkey is your tracker passkey. The data_dir is the directory where your downloads are stored. The torrent_dir is the directory where torrents should be created (e.g., your watch directory).
+
+You should end up with something like this:
+
+    [whatcd]
+    username = RequestBunny
+    password = clapton
+    passkey = as309uasdfklwwe90sakjlsd
+    data_dir = ~/Downloads
+    torrent_dir = ~/Torrents
+
+Alright! Now you're ready to use whatbetter.
 
 Usage
 -----
