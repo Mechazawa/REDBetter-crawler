@@ -39,8 +39,10 @@ def main():
         data_dir = os.path.expanduser(config.get('whatcd', 'data_dir'))
         torrent_dir = os.path.expanduser(config.get('whatcd', 'torrent_dir'))
 
+    print('Logging in to What.CD...')
     browser = whatbrowser.WhatBrowser(username, password, passkey=passkey, data_dir=data_dir, torrent_dir=torrent_dir)
 
+    print('Searching for transcode candidates...')
     if args.all:
         releases = browser.snatched(format='FLAC')
     elif args.auto:
@@ -49,7 +51,7 @@ def main():
         print("No release urls specified; assuming --auto")
         releases = browser.transcode_candidates()
     else:
-        releases = [browser.get_release(url) for url in args.release_urls]
+        releases = (browser.get_release(url) for url in args.release_urls)
 
     for release in releases:
         codecs = release.formats_needed()
@@ -58,7 +60,11 @@ def main():
         print("Editions: %s" % len(release.editions))
 
         for codec in codecs:
-            release.add_format(codec)
+            if os.path.exists(release.flac_dir):
+                print('Adding format %s...' % codec)
+                release.add_format(codec)
+            else:
+                print("Path not found - skipping: %s" % release.flac_dir)
 
 if __name__ == "__main__":
     main()

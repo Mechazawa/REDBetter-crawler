@@ -55,7 +55,8 @@ class WhatBrowser(mechanize.Browser):
 
         doc = parse_html(self._response.read())
         self.userid = re.search('[0-9]+$', \
-                doc.cssselect('div#userinfo ul#userinfo_username li a.username')[0].get('href'))
+                doc.cssselect('div#userinfo ul#userinfo_username li '
+                    + 'a.username')[0].get('href')).group(0)
 
     def goto(self, url, refresh=False):
         if self.geturl() != url or refresh:
@@ -86,11 +87,12 @@ class WhatBrowser(mechanize.Browser):
                 yield self.get_release(url)
     
     def snatched(self, **kwargs):
-        snatched_url = 'http://what.cd/torrents.php?type-snatched&userid=%s' % self.userid
-        snatched_url += '&'.join('%s=%s' % (param, value) for param, value in
+        snatched_url = 'http://what.cd/torrents.php?type=snatched&userid=%s' % self.userid
+        snatched_url += '&' + '&'.join('%s=%s' % (param, value) for param, value in
                 kwargs.iteritems())
+        done = False
         while not done:
-            response = self.goto(snatched_url)
+            response = self.goto(snatched_url).read()
             doc = parse_html(response)
             for release_url in doc.cssselect('.thin a'):
                 if release_url.get('title') == 'View Torrent':
@@ -114,7 +116,6 @@ class Release:
         if folder.startswith('/'):
             folder = folder[1:]
         self.flac_dir = os.path.join(self.browser.data_dir, folder)
-        print self.flac_dir
 
     def retrieve_info(self):
         response = self.browser.goto(self.url).read()

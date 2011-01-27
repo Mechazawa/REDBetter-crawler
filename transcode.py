@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import re
+import shlex
 import shutil
 import fnmatch
 import threading
@@ -42,15 +43,15 @@ class Transcode(threading.Thread):
             os.makedirs(os.path.dirname(transcode_file))
 
         # determine the correct transcoding process
-        flac_decoder = 'flac -dc -- "%(FLAC)s"'
+        flac_decoder = 'flac -dcs -- "%(FLAC)s"'
 
-        lame_encoder = 'lame -S %(OPTS)s - "%(FILE)s"'
-        ogg_encoder = 'oggenc -Q %(OPTS)s -o "%(FILE)s" -'
-        ffmpeg_encoder = 'ffmpeg %(OPTS)s "%(FILE)s"'
-        nero_encoder = 'neroAacEnc %(OPTS)s -if - -of "%(FILE)s"'
-        flac_encoder = 'flac %(OPTS)s -o "%(FILE)s" -'
+        lame_encoder = 'lame -S %(OPTS)s - "%(FILE)s" > /dev/null 2> /dev/null'
+        ogg_encoder = 'oggenc -Q %(OPTS)s -o "%(FILE)s" - > /dev/null 2> /dev/null'
+        ffmpeg_encoder = 'ffmpeg %(OPTS)s "%(FILE)s" > /dev/null 2> /dev/null'
+        nero_encoder = 'neroAacEnc %(OPTS)s -if - -of "%(FILE)s" > /dev/null 2> /dev/null'
+        flac_encoder = 'flac %(OPTS)s -o "%(FILE)s" - > /dev/null 2> /dev/null'
 
-        dither_command = 'sox -t wav - -b 16 -r 44100 -t wav -'
+        dither_command = 'sox -t wav - -b 16 -r 44100 --norm -t wav -'
 
         transcoding_steps = [flac_decoder]
 
@@ -87,10 +88,10 @@ class Transcode(threading.Thread):
             transcode_args['TEMP'] = self.flac_file + ".wav"
             transcode_command = ''.join([flac_decoder, ' | ', dither_command, ' > "%(TEMP)s"; ', \
                     flac_encoder, ' < "%(TEMP)s"; rm "%(TEMP)s"']) % transcode_args
-            print transcode_command
         
         # transcode the file
-        os.system(transcode_command)
+        subprocess.Popen(shlex.split(transcode_command), stdout=subprocess.PIPE,
+                stderr=PIPE)
 
         # tag the file
         transcode_info = mediafile.MediaFile(transcode_file)
