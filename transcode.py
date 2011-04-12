@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import re
+import pipes
 import shlex
 import shutil
 import fnmatch
@@ -43,13 +44,13 @@ class Transcode(threading.Thread):
             os.makedirs(os.path.dirname(transcode_file))
 
         # determine the correct transcoding process
-        flac_decoder = 'flac -dcs -- "%(FLAC)s"'
+        flac_decoder = 'flac -dcs -- %(FLAC)s'
 
-        lame_encoder = 'lame -S %(OPTS)s - "%(FILE)s" > /dev/null 2> /dev/null'
-        ogg_encoder = 'oggenc -Q %(OPTS)s -o "%(FILE)s" - > /dev/null 2> /dev/null'
-        ffmpeg_encoder = 'ffmpeg %(OPTS)s "%(FILE)s" > /dev/null 2> /dev/null'
-        nero_encoder = 'neroAacEnc %(OPTS)s -if - -of "%(FILE)s" > /dev/null 2> /dev/null'
-        flac_encoder = 'flac %(OPTS)s -o "%(FILE)s" - > /dev/null 2> /dev/null'
+        lame_encoder = 'lame -S %(OPTS)s - %(FILE)s > /dev/null 2> /dev/null'
+        ogg_encoder = 'oggenc -Q %(OPTS)s -o %(FILE)s - > /dev/null 2> /dev/null'
+        ffmpeg_encoder = 'ffmpeg %(OPTS)s %(FILE)s > /dev/null 2> /dev/null'
+        nero_encoder = 'neroAacEnc %(OPTS)s -if - -of %(FILE)s > /dev/null 2> /dev/null'
+        flac_encoder = 'flac %(OPTS)s -o %(FILE)s - > /dev/null 2> /dev/null'
 
         dither_command = 'sox -t wav - -b 16 -r 44100 -t wav -'
 
@@ -75,8 +76,8 @@ class Transcode(threading.Thread):
             transcode_file += ".flac"
 
         transcode_args = {
-            'FLAC' : self.flac_file,
-            'FILE' : transcode_file,
+            'FLAC' : pipes.quote(self.flac_file),
+            'FILE' : pipes.quote(transcode_file),
             'OPTS' : encoders[self.codec]['opts']
         }
 
@@ -85,9 +86,9 @@ class Transcode(threading.Thread):
         if self.dither and self.codec == 'FLAC':
             # for some reason, FLAC | SoX | FLAC does not work.
             # use files instead.
-            transcode_args['TEMP'] = self.flac_file + ".wav"
-            transcode_command = ''.join([flac_decoder, ' | ', dither_command, ' > "%(TEMP)s"; ', \
-                    flac_encoder, ' < "%(TEMP)s"; rm "%(TEMP)s"']) % transcode_args
+            transcode_args['TEMP'] = pipes.quote(self.flac_file + ".wav")
+            transcode_command = ''.join([flac_decoder, ' | ', dither_command, ' > %(TEMP)s; ', \
+                    flac_encoder, ' < %(TEMP)s; rm %(TEMP)s']) % transcode_args
         
         # transcode the file
         try:
@@ -206,11 +207,11 @@ def make_torrent(input_dir, output_dir, tracker, passkey):
     torrent = os.path.join(output_dir, os.path.basename(input_dir)) + ".torrent"
     if not os.path.exists(os.path.dirname(torrent)):
         os.path.makedirs(os.path.dirname(torrent))
-    torrent_command = 'mktorrent -p -a "%(tracker)s%(passkey)s/announce" -o "%(torrent)s" "%(input_dir)s"' % {
+    torrent_command = 'mktorrent -p -a "%(tracker)s%(passkey)s/announce" -o %(torrent)s %(input_dir)s' % {
         'tracker' : tracker,
         'passkey' : passkey,
-        'torrent' : torrent,
-        'input_dir' : input_dir
+        'torrent' : pipes.quote(torrent),
+        'input_dir' : pipes.quote(input_dir)
     }
     subprocess.call(torrent_command, shell=True)
     return torrent
