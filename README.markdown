@@ -1,6 +1,3 @@
-whatbetter
-==========
-
 Introduction
 ------------
 whatbetter is a script which automatically transcodes and uploads FLACs on What.CD.
