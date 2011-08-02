@@ -2,6 +2,7 @@
 import os
 import re
 import json
+import shutil
 import urlparse
 import tempfile
 import lxml.html
@@ -194,7 +195,10 @@ class Release:
 
     def add_format(self, codec):
         transcode_dir = transcode.transcode(self.flac_dir, codec, output_dir=self.browser.data_dir)
-        torrent = transcode.make_torrent(transcode_dir, self.browser.torrent_dir, self.browser.tracker, self.browser.passkey)
+        # create torrent in a temporary directory, then move it to the watch dir.
+        # some clients (i.e. deluge) delete torrents after adding them from the watch dir.
+        # it's difficult to upload a non-existent torrent, so we do it this way instead. 
+        torrent = transcode.make_torrent(transcode_dir, tempfile.mkdtemp(), self.browser.tracker, self.browser.passkey)
 
         self.browser.goto(self.upload_url)
         # select the last form on the page
@@ -237,6 +241,10 @@ class Release:
 
         # submit the form
         response = self.browser.submit()
+
+        # copy torrent to watch dir
+        shutil.copy(torrent, self.browser.torrent_dir)
+        
         return response
 
 class Torrent:
