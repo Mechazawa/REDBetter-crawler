@@ -2,6 +2,7 @@
 import os
 import re
 import json
+import pprint
 import shutil
 import urlparse
 import tempfile
@@ -179,17 +180,21 @@ class Release:
         response = self.browser.goto(self.url)
         doc = parse_html(response.read())
 
+        edition = None
         for torrent_group in doc.cssselect('.group_torrent'):
             try:
                 torrentid = torrent_group.get('id').replace('torrent', '')
-                torrents.append(Torrent(self.browser, torrentid))
+                torrent = Torrent(self.browser, torrentid)
+                torrent.edition = edition
+                torrent.media = edition.split(' / ')[-1]
+                torrents.append(torrent)
             except Exception as e:
-                continue
+                edition = torrent_group.text_content()[1:].strip()
         
         return torrents
 
     def formats_needed(self):
-        current_formats = [t.codec for t in self.get_torrents()]
+        current_formats = [t.codec for t in self.torrents]
         formats_needed = [codec for codec in encoders.keys() if codec not in current_formats]
         return formats_needed
 
@@ -260,18 +265,18 @@ class Torrent:
         doc = parse_html(response)
         for torrent_group in doc.cssselect('tr#torrent%s' % self.id):
             for torrent_info in torrent_group.cssselect('td a'):
-                if torrent_info.text_content() in ['RP', 'ED', 'RM', 'PL']:
+                # skip the links
+                if torrent_info.text_content() in ['RP', 'ED', 'RM', 'PL', 'FL']:
                     continue
                 elif torrent_info.text_content() == 'DL':
                     self.download_link = torrent_info.get('href')
                 else:
-                    info = torrent_info.text_content()[1:].strip() # trim leading char
+                    info = torrent_info.text_content().strip()
                     result = info.split(' / ')
                     if 'Reported' in result:
                         result.pop()
                     self.format = result[0].strip()
                     self.bitrate = result[1].strip()
-                    self.media = result[-1].strip()
                     self.codec = get_codec(self.format, self.bitrate)
                     try:
                         scene = result[3]

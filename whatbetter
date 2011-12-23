@@ -80,6 +80,7 @@ def main():
                     print "Error adding format %s: %s" % (codec, e)
             else:
                 print("Path not found - skipping: %s" % release.flac_dir)
+                break
         seen.add(release.id)
         pickle.dump(seen, open(args.cache, 'wb'))
 
