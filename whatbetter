@@ -14,6 +14,7 @@ def main():
     parser.add_argument('release_urls', nargs='*', help='the URL where the release is located')
     parser.add_argument('-A', '--auto', action='store_true', help='attempt to automatically find transcode candidates')
     parser.add_argument('-a', '--all', action='store_true', help='search through all snatched torrents for transcode candidates')
+    parser.add_argument('-s', '--single', action='store_true', help='only add one format per release (useful for getting unique groups)')
     parser.add_argument('--config', help='the location of the configuration file (default: ~/.whatbetter/config)', \
             default = os.path.expanduser('~/.whatbetter/config'))
     parser.add_argument('--cache', help='the location of the cache (default: ~/.whatbetter/cache)', \
@@ -76,6 +77,7 @@ def main():
                 print('Adding format %s...' % codec)
                 try:
                     release.add_format(codec)
+                    if args.single: break
                 except Exception as e:
                     print "Error adding format %s: %s" % (codec, e)
             else:
