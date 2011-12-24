@@ -180,16 +180,16 @@ class Release:
         response = self.browser.goto(self.url)
         doc = parse_html(response.read())
 
-        edition = None
+        edition_string = None
         for torrent_group in doc.cssselect('.group_torrent'):
             try:
                 torrentid = torrent_group.get('id').replace('torrent', '')
                 torrent = Torrent(self.browser, torrentid)
-                torrent.edition = edition
-                torrent.media = edition.split(' / ')[-1]
+                torrent.edition_string = edition_string
+                torrent.media = edition_string.split(' / ')[-1]
                 torrents.append(torrent)
             except Exception as e:
-                edition = torrent_group.text_content()[1:].strip()
+                edition_string = torrent_group.text_content()[1:].strip()
         
         return torrents
 
