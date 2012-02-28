@@ -39,9 +39,12 @@ class Transcode(threading.Thread):
         transcode_file = re.sub(re.escape(self.flac_dir), self.transcode_dir, self.flac_file)
         transcode_file = re.sub('\.flac$', '', transcode_file)
 
-        # make sure the path exists
-        if not os.path.exists(os.path.dirname(transcode_file)):
+        try:
             os.makedirs(os.path.dirname(transcode_file))
+        except OSError as exc:
+            if exc.errno == errno.EEXIST:
+                pass
+            else: raise
 
         # determine the correct transcoding process
         flac_decoder = 'flac -dcs -- %(FLAC)s'
