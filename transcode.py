@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import re
+import errno
 import pipes
 import shlex
 import shutil
