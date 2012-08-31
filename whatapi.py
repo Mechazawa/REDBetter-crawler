@@ -7,11 +7,6 @@ import mechanize
 import htmlentitydefs
 from cStringIO import StringIO
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
-
 headers = {
     'Connection': 'keep-alive',
     'Cache-Control': 'max-age=0',
@@ -24,28 +19,28 @@ headers = {
     'Accept-Language': 'en-US,en;q=0.8',
     'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3'}
 
-formats = OrderedDict((
-    ('FLAC', {
+formats = {
+    'FLAC': {
         'format': 'FLAC',
         'encoding': 'Lossless'
-        }),
-    ('V0', {
+    },
+    'V0': {
         'format' : 'MP3',
         'encoding' : 'V0 (VBR)'
-        }),
-    ('320', {
+    },
+    '320': {
         'format' : 'MP3',
         'encoding' : '320'
-        }),
-    ('V2', {
+    },
+    'V2': {
         'format' : 'MP3', 
         'encoding' : 'V2 (VBR)'
-        }),
-    ('AAC', {
+    },
+    'AAC': {
         'format' : 'AAC',
         'encoding': '320'
-        }),
-))
+    },
+}
 
 class LoginException(Exception):
     pass

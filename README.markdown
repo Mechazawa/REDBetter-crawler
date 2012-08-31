@@ -63,11 +63,14 @@ like this:
     password = 
     data_dir =
     torrent_dir =
+    formats = flac, v0, 320, v2, aac
 
-The username and password are your What.CD login credentials. The
-data\_dir is the directory where your downloads are stored. The
-torrent\_dir is the directory where torrents should be created (e.g.,
-your watch directory).
+`username` and `password` are your What.CD login credentials. 
+`data\_dir` is the directory where your downloads are stored. 
+`torrent\_dir` is the directory where torrents should be created (e.g.,
+your watch directory). `formats` is a list of formats that you'd like to
+support (so if you don't want to upload AAC, just remove it from this
+list).
 
 You should end up with something like this:
 
@@ -76,6 +79,7 @@ You should end up with something like this:
     password = clapton
     data_dir = /srv/downloads
     torrent_dir = /srv/torrents
+    formats = flac, v0, 320
 
 Alright! Now you're ready to use whatbetter.
 

@@ -22,7 +22,6 @@ setup(
         'mutagen',
         'mechanize',
         'argparse',
-        'ordereddict',
         'requests'
     ]
 )

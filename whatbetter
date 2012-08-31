@@ -10,7 +10,7 @@ import cPickle as pickle
 import whatapi
 import transcode
 
-def formats_needed(group, torrent):
+def formats_needed(group, torrent, supported_formats):
     same_group = lambda t: t['media'] == torrent['media'] and\
                            t['remasterYear'] == torrent['remasterYear'] and\
                            t['remasterTitle'] == torrent['remasterTitle'] and\
@@ -19,7 +19,7 @@ def formats_needed(group, torrent):
 
     others = filter(same_group, group['torrents'])
     current_formats = set((t['format'], t['encoding']) for t in others)
-    return [format for format, details in whatapi.formats.items()\
+    return [format for format, details in [(f, whatapi.formats[f]) for f in supported_formats]\
             if (details['format'], details['encoding']) not in current_formats]
 
 def main():
@@ -45,6 +45,7 @@ def main():
         config.set('whatcd', 'password', '')
         config.set('whatcd', 'data_dir', '')
         config.set('whatcd', 'torrent_dir', '')
+        config.set('whatcd', 'formats', 'flac, v0, 320, v2, aac')
         config.write(open(args.config, 'w'))
         print('Please edit the configuration file: %s' % args.config)
         sys.exit(2)
@@ -53,6 +54,7 @@ def main():
         password = config.get('whatcd', 'password')
         data_dir = os.path.expanduser(config.get('whatcd', 'data_dir'))
         torrent_dir = os.path.expanduser(config.get('whatcd', 'torrent_dir'))
+        supported_formats = [format.strip().upper() for format in config.get('whatcd', 'formats').split(',')]
 
     print('Logging in to What.CD...')
     api = whatapi.WhatAPI(username, password)
@@ -74,7 +76,7 @@ def main():
     for groupid, torrentid in candidates:
         group = api.request('torrentgroup', id=groupid)
         torrent = [t for t in group['torrents'] if t['id'] == torrentid][0]
-        needed = formats_needed(group, torrent)
+        needed = formats_needed(group, torrent, supported_formats)
 
         print
         print "Release found: %s (%s)" % (whatapi.unescape(group['group']['name']), group['group']['year'])
@@ -96,7 +98,7 @@ def main():
                 print("Path not found - skipping: %s" % flac_dir)
                 break
         seen.add(torrentid)
-    	pickle.dump(seen, open(args.cache, 'wb'))
+        pickle.dump(seen, open(args.cache, 'wb'))
 
 if __name__ == "__main__":
     main()
