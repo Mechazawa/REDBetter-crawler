@@ -208,15 +208,14 @@ def transcode(flac_dir, codec, max_threads=cpu_count(), output_dir=None):
 
     return transcode_dir
 
-def removeNonAscii(s): return "".join(i for i in s if ord(i)<128)
-
 def make_torrent(input_dir, output_dir, tracker, passkey):
-    torrent = os.path.join(output_dir, removeNonAscii(os.path.basename(input_dir))) + ".torrent"
+    torrent = os.path.join(output_dir, os.path.basename(input_dir).encode(sys.getfilesystemencoding())) + ".torrent"
     if not os.path.exists(os.path.dirname(torrent)):
         os.path.makedirs(os.path.dirname(torrent))
     tracker_url = '%(tracker)s%(passkey)s/announce' % {
         'tracker' : tracker,
         'passkey' : passkey,
     }
+    print tracker_url
     subprocess.call(["mktorrent", "-p", "-a", tracker_url, "-o", torrent, input_dir.encode(sys.getfilesystemencoding())])
     return torrent
