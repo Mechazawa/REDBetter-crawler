@@ -2,6 +2,7 @@
 import re
 import os
 import json
+import time
 import requests
 import mechanize
 import htmlentitydefs
@@ -57,6 +58,8 @@ class WhatAPI:
         self.passkey = None
         self.userid = None
         self.tracker = "http://tracker.what.cd:34000/"
+        self.last_request = time.time()
+        self.rate_limit = 1.0 # seconds between requests
         self._login()
 
     def _login(self):
@@ -74,12 +77,16 @@ class WhatAPI:
 
     def request(self, action, **kwargs):
         '''Makes an AJAX request at a given action page'''
+        while time.time() - self.last_request < self.rate_limit:
+            time.sleep(0.1)
+
         ajaxpage = 'https://what.cd/ajax.php'
         params = {'action': action}
         if self.authkey:
             params['auth'] = self.authkey
         params.update(kwargs)
         r = self.session.get(ajaxpage, params=params, allow_redirects=False)
+        self.last_request = time.time()
         try:
             parsed = json.loads(r.content)
             if parsed['status'] != 'success':
