@@ -96,7 +96,7 @@ def main():
                 print("Path not found - skipping: %s" % flac_dir)
                 break
         seen.add(torrentid)
-    pickle.dump(seen, open(args.cache, 'wb'))
+    	pickle.dump(seen, open(args.cache, 'wb'))
 
 if __name__ == "__main__":
     main()

@@ -216,6 +216,5 @@ def make_torrent(input_dir, output_dir, tracker, passkey):
         'tracker' : tracker,
         'passkey' : passkey,
     }
-    print tracker_url
     subprocess.call(["mktorrent", "-p", "-a", tracker_url, "-o", torrent, input_dir.encode(sys.getfilesystemencoding())])
     return torrent
