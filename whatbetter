@@ -11,92 +11,92 @@ import whatapi
 import transcode
 
 def formats_needed(group, torrent):
-	same_group = lambda t: t['media'] == torrent['media'] and\
+    same_group = lambda t: t['media'] == torrent['media'] and\
                            t['remasterYear'] == torrent['remasterYear'] and\
-						   t['remasterTitle'] == torrent['remasterTitle'] and\
-						   t['remasterRecordLabel'] == torrent['remasterRecordLabel'] and\
-						   t['remasterCatalogueNumber'] == torrent['remasterCatalogueNumber']
+                           t['remasterTitle'] == torrent['remasterTitle'] and\
+                           t['remasterRecordLabel'] == torrent['remasterRecordLabel'] and\
+                           t['remasterCatalogueNumber'] == torrent['remasterCatalogueNumber']
 
-	others = filter(same_group, group['torrents'])
-	current_formats = set((t['format'], t['encoding']) for t in others)
-	return [format for format, details in whatapi.formats.items()\
-			if (details['format'], details['encoding']) not in current_formats]
+    others = filter(same_group, group['torrents'])
+    current_formats = set((t['format'], t['encoding']) for t in others)
+    return [format for format, details in whatapi.formats.items()\
+            if (details['format'], details['encoding']) not in current_formats]
 
 def main():
-	parser = argparse.ArgumentParser()
-	parser.add_argument('release_urls', nargs='*', help='the URL where the release is located')
-	parser.add_argument('-s', '--single', action='store_true', help='only add one format per release (useful for getting unique groups)')
-	parser.add_argument('--config', help='the location of the configuration file (default: ~/.whatbetter/config)', \
-			default = os.path.expanduser('~/.whatbetter/config'))
-	parser.add_argument('--cache', help='the location of the cache (default: ~/.whatbetter/cache)', \
-			default=os.path.expanduser('~/.whatbetter/cache'))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('release_urls', nargs='*', help='the URL where the release is located')
+    parser.add_argument('-s', '--single', action='store_true', help='only add one format per release (useful for getting unique groups)')
+    parser.add_argument('--config', help='the location of the configuration file (default: ~/.whatbetter/config)', \
+            default = os.path.expanduser('~/.whatbetter/config'))
+    parser.add_argument('--cache', help='the location of the cache (default: ~/.whatbetter/cache)', \
+            default=os.path.expanduser('~/.whatbetter/cache'))
 
-	args = parser.parse_args()
+    args = parser.parse_args()
 
-	config = ConfigParser.SafeConfigParser()
-	try:
-		open(args.config)
-		config.read(args.config)
-	except:
-		if not os.path.exists(os.path.dirname(args.config)):
-			os.makedirs(os.path.dirname(args.config))
-		config.add_section('whatcd')
-		config.set('whatcd', 'username', '')
-		config.set('whatcd', 'password', '')
-		config.set('whatcd', 'data_dir', '')
-		config.set('whatcd', 'torrent_dir', '')
-		config.write(open(args.config, 'w'))
-		print('Please edit the configuration file: %s' % args.config)
-		sys.exit(2)
-	finally:
-		username = config.get('whatcd', 'username')
-		password = config.get('whatcd', 'password')
-		data_dir = os.path.expanduser(config.get('whatcd', 'data_dir'))
-		torrent_dir = os.path.expanduser(config.get('whatcd', 'torrent_dir'))
+    config = ConfigParser.SafeConfigParser()
+    try:
+        open(args.config)
+        config.read(args.config)
+    except:
+        if not os.path.exists(os.path.dirname(args.config)):
+            os.makedirs(os.path.dirname(args.config))
+        config.add_section('whatcd')
+        config.set('whatcd', 'username', '')
+        config.set('whatcd', 'password', '')
+        config.set('whatcd', 'data_dir', '')
+        config.set('whatcd', 'torrent_dir', '')
+        config.write(open(args.config, 'w'))
+        print('Please edit the configuration file: %s' % args.config)
+        sys.exit(2)
+    finally:
+        username = config.get('whatcd', 'username')
+        password = config.get('whatcd', 'password')
+        data_dir = os.path.expanduser(config.get('whatcd', 'data_dir'))
+        torrent_dir = os.path.expanduser(config.get('whatcd', 'torrent_dir'))
 
-	print('Logging in to What.CD...')
-	api = whatapi.WhatAPI(username, password)
+    print('Logging in to What.CD...')
+    api = whatapi.WhatAPI(username, password)
 
-	# cache
-	try:
-		seen = pickle.load(open(args.cache))
-	except:
-		seen = set()
-		pickle.dump(seen, open(args.cache, 'wb'))
+    # cache
+    try:
+        seen = pickle.load(open(args.cache))
+    except:
+        seen = set()
+        pickle.dump(seen, open(args.cache, 'wb'))
 
-	print('Searching for transcode candidates...')
-	if args.release_urls:
-		candidates = [(int(query['id']), int(query['torrentid'])) for query in\
-				[dict(urlparse.parse_qsl(url.split('?')[-1])) for url in args.release_urls]]
-	else:
-		candidates = api.snatched(skip=seen)
+    print('Searching for transcode candidates...')
+    if args.release_urls:
+        candidates = [(int(query['id']), int(query['torrentid'])) for query in\
+                [dict(urlparse.parse_qsl(url.split('?')[-1])) for url in args.release_urls]]
+    else:
+        candidates = api.snatched(skip=seen)
 
-	for groupid, torrentid in candidates:
-		group = api.request('torrentgroup', id=groupid)
-		torrent = [t for t in group['torrents'] if t['id'] == torrentid][0]
-		needed = formats_needed(group, torrent)
+    for groupid, torrentid in candidates:
+        group = api.request('torrentgroup', id=groupid)
+        torrent = [t for t in group['torrents'] if t['id'] == torrentid][0]
+        needed = formats_needed(group, torrent)
 
-		print
-		print "Release found: %s (%s)" % (whatapi.unescape(group['group']['name']), group['group']['year'])
-		print "Formats needed: %s" % ', '.join(needed)
-	
-		flac_dir = os.path.join(data_dir, whatapi.unescape(torrent['filePath']))
-		for format in needed:
-			if os.path.exists(flac_dir):
-				print('Adding format %s...' % format)
-				try:
-					transcode_dir = transcode.transcode(flac_dir, format, output_dir=data_dir)
-					new_torrent = transcode.make_torrent(transcode_dir, tempfile.mkdtemp(), api.tracker, api.passkey)
-					api.upload(group, torrent, new_torrent, format)
-					shutil.copy(new_torrent, torrent_dir)
-					if args.single: break
-				except Exception as e:
-					print "Error adding format %s: %s" % (format, e)
-			else:
-				print("Path not found - skipping: %s" % flac_dir)
-				break
-		seen.add(torrentid)
-	pickle.dump(seen, open(args.cache, 'wb'))
+        print
+        print "Release found: %s (%s)" % (whatapi.unescape(group['group']['name']), group['group']['year'])
+        print "Formats needed: %s" % ', '.join(needed)
+    
+        flac_dir = os.path.join(data_dir, whatapi.unescape(torrent['filePath']))
+        for format in needed:
+            if os.path.exists(flac_dir):
+                print('Adding format %s...' % format)
+                try:
+                    transcode_dir = transcode.transcode(flac_dir, format, output_dir=data_dir)
+                    new_torrent = transcode.make_torrent(transcode_dir, tempfile.mkdtemp(), api.tracker, api.passkey)
+                    api.upload(group, torrent, new_torrent, format)
+                    shutil.copy(new_torrent, torrent_dir)
+                    if args.single: break
+                except Exception as e:
+                    print "Error adding format %s: %s" % (format, e)
+            else:
+                print("Path not found - skipping: %s" % flac_dir)
+                break
+        seen.add(torrentid)
+    pickle.dump(seen, open(args.cache, 'wb'))
 
 if __name__ == "__main__":
-	main()
+    main()
