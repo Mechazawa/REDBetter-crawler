@@ -11,15 +11,14 @@ setup (
     author = 'Zach Denton',
     author_email = 'zacharydenton@gmail.com',
     version = '1.0',
-    url = 'http://zacharydenton.com/code/whatbetter/',
+    url = 'http://github.com/zacharydenton/whatbetter',
     py_modules = ['mediafile',
                   'transcode',
-                  'whatbrowser',
-                  'ordereddict'],
+                  'whatapi'],
     scripts = ['whatbetter'],
     install_requires = ['mutagen',
                 'mechanize',
                 'argparse',
-                'BeautifulSoup',
-                'lxml']
+                'ordereddict',
+                'requests']
 )
