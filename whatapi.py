@@ -150,6 +150,15 @@ class WhatAPI:
         _, data, headers = form.click_request_data()
         response = self.session.post(url, data=data, headers=dict(headers))
 
+    def set_24bit(self, torrent):
+        url = "https://what.cd/torrents.php?action=edit&id=%s" % torrent['id']
+        response = self.session.get(url)
+        forms = mechanize.ParseFile(StringIO(response.text), url)
+        form = forms[-3]
+        form.find_control('bitrate').set('1', '24bit Lossless')
+        _, data, headers = form.click_request_data()
+        response = self.session.post(url, data=data, headers=dict(headers))
+
 def unescape(text):
    """Removes HTML or XML character references 
       and entities from a text string.

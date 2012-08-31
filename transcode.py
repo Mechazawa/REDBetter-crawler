@@ -141,6 +141,16 @@ def get_transcode_dir(flac_dir, codec, dither, output_dir=None):
 
     return transcode_dir
 
+def is_24bit(flac_dir):
+    for path, dirs, files in os.walk(flac_dir, topdown=False):
+        for name in files:
+            canonical = os.path.join(path, name)
+            if fnmatch.fnmatch(name, '*.flac'):
+                flac_info = mediafile.MediaFile(canonical)
+                bits_per_sample = flac_info.mgfile.info.bits_per_sample
+                return bits_per_sample > 16
+    return False
+
 def transcode(flac_dir, codec, max_threads=cpu_count(), output_dir=None):
     '''transcode a directory of FLACs to another format'''
     if codec not in encoders.keys():
