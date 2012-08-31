@@ -200,7 +200,7 @@ def transcode(flac_dir, codec, max_threads=cpu_count(), output_dir=None):
     # copy other files
     for path, dirs, files in os.walk(flac_dir, topdown=False):
         for name in files:
-            if not fnmatch.fnmatch(name, '*.flac') and not fnmatch.fnmatch(name, '*.m3u'):
+            if os.path.splitext(name)[1] in ['.cue', '.gif', '.jpeg', '.jpg', '.log', '.md5', '.nfo', '.pdf', '.png', '.sfv', '.txt']:
                 d = re.sub(re.escape(flac_dir), transcode_dir, path)
                 if not os.path.exists(d):
                     os.makedirs(d)

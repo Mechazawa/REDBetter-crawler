@@ -118,7 +118,7 @@ class WhatAPI:
             content = self.session.get(url + "&page=%s" % page).text
             pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)')
             for groupid, torrentid in pattern.findall(content):
-                if not skip or torrentid not in skip:
+                if skip is None or torrentid not in skip:
                     yield int(groupid), int(torrentid)
             done = 'Next &gt;' not in content
             page += 1
