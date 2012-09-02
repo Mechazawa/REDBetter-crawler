@@ -7,6 +7,7 @@ import tempfile
 import urlparse
 import ConfigParser
 import cPickle as pickle
+from multiprocessing import cpu_count
 import whatapi
 import transcode
 
@@ -23,12 +24,14 @@ def formats_needed(group, torrent, supported_formats):
             if (details['format'], details['encoding']) not in current_formats]
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('release_urls', nargs='*', help='the URL where the release is located')
     parser.add_argument('-s', '--single', action='store_true', help='only add one format per release (useful for getting unique groups)')
-    parser.add_argument('--config', help='the location of the configuration file (default: ~/.whatbetter/config)', \
-            default = os.path.expanduser('~/.whatbetter/config'))
-    parser.add_argument('--cache', help='the location of the cache (default: ~/.whatbetter/cache)', \
+    parser.add_argument('-j', '--threads', type=int, help='number of threads to use when transcoding',
+            default=cpu_count())
+    parser.add_argument('--config', help='the location of the configuration file', \
+            default=os.path.expanduser('~/.whatbetter/config'))
+    parser.add_argument('--cache', help='the location of the cache', \
             default=os.path.expanduser('~/.whatbetter/cache'))
 
     args = parser.parse_args()
@@ -102,7 +105,7 @@ def main():
             if os.path.exists(flac_dir):
                 print('Adding format %s...' % format)
                 try:
-                    transcode_dir = transcode.transcode(flac_dir, format, output_dir=data_dir)
+                    transcode_dir = transcode.transcode(flac_dir, format, max_threads=args.threads, output_dir=data_dir)
                     new_torrent = transcode.make_torrent(transcode_dir, tempfile.mkdtemp(), api.tracker, api.passkey)
                     api.upload(group, torrent, new_torrent, format)
                     shutil.copy(new_torrent, torrent_dir)
