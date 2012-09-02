@@ -76,21 +76,26 @@ def main():
         group = api.request('torrentgroup', id=groupid)
         torrent = [t for t in group['torrents'] if t['id'] == torrentid][0]
 
+        print
+        print "Release found: %s (%s)" % (whatapi.unescape(group['group']['name']), group['group']['year'])
+        
+        if not torrent['filePath']:
+            print "This release is not enclosed within its own directory. Skipping..."
+            continue
+
         flac_dir = os.path.join(data_dir, whatapi.unescape(torrent['filePath']))
+
         if transcode.is_24bit(flac_dir) and torrent['encoding'] != '24bit Lossless':
             # A lot of people are uploading FLACs from Bandcamp without realizing
             # that they're actually 24 bit files (usually 24/44.1). Since we know for
             # sure whether the files are 24 bit, we might as well correct the listing
             # on the site (and get an extra upload in the process).
-            print "Marking release as 24bit Lossless."
+            print "Marking release as 24bit lossless."
             api.set_24bit(torrent)
             group = api.request('torrentgroup', id=groupid)
             torrent = [t for t in group['torrents'] if t['id'] == torrentid][0]
 
         needed = formats_needed(group, torrent, supported_formats)
-
-        print
-        print "Release found: %s (%s)" % (whatapi.unescape(group['group']['name']), group['group']['year'])
         print "Formats needed: %s" % ', '.join(needed)
     
         for format in needed:
