@@ -2,15 +2,11 @@
 import os
 import re
 import sys
-import errno
 import pipes
-import shlex
 import shutil
 import fnmatch
-import threading
 import subprocess
-from multiprocessing import cpu_count
-
+import multiprocessing
 import mediafile
 
 encoders = {
@@ -23,201 +19,160 @@ encoders = {
     'FLAC': {'enc': 'flac',     'opts': '--best'}
 }
 
-class Transcode(threading.Thread):
-    def __init__(self, flac_file, flac_dir, transcode_dir, codec, dither, cv):
-        threading.Thread.__init__(self)
-        self.flac_file = flac_file
-        self.flac_dir = flac_dir
-        self.transcode_dir = transcode_dir
-        self.codec = codec
-        self.dither = dither
-        self.cv = cv
+def locate(root, match_function):
+    '''
+    Yields all filenames within the root directory for which match_function return True.
+    '''
+    for path, dirs, files in os.walk(root):
+        for filename in (os.path.abspath(os.path.join(path, filename)) for filename in files if match_function(filename)):
+            yield filename
 
-    def run(self):
-        # gather metadata from the flac file
-        flac_info = mediafile.MediaFile(self.flac_file)
+def ext_matcher(*extensions):
+    '''
+    Returns a function which checks if a filename has one of the specified extensions.
+    '''
+    return lambda f: os.path.splitext(f)[-1].lower() in extensions
 
-        # determine the new filename
-        transcode_file = re.sub(re.escape(self.flac_dir), self.transcode_dir, self.flac_file)
-        transcode_file = os.path.splitext(transcode_file)[0]
+def is_24bit(flac_dir):
+    '''
+    Returns True if any FLAC within flac_dir is 24 bit.
+    '''
+    flacs = (mediafile.MediaFile(flac_file) for flac_file in locate(flac_dir, ext_matcher('.flac')))
+    return any(flac.mgfile.info.bits_per_sample > 16 for flac in flacs)
 
-        try:
-            os.makedirs(os.path.dirname(transcode_file))
-        except OSError as exc:
-            if exc.errno == errno.EEXIST:
-                pass
-            else: raise
+def transcode(flac_file, output_dir, output_format):
+    '''
+    Transcodes a FLAC file into another format.
+    '''
+    # gather metadata from the flac file
+    flac_info = mediafile.MediaFile(flac_file)
+    sample_rate = flac_info.mgfile.info.sample_rate
+    bits_per_sample = flac_info.mgfile.info.bits_per_sample
+    dither = sample_rate > 48000 or bits_per_sample > 16
 
-        # determine the correct transcoding process
-        flac_decoder = 'flac -dcs -- %(FLAC)s'
+    # determine the new filename
+    transcode_file = os.path.join(output_dir, os.path.splitext(os.path.basename(flac_file))[0])
+    if not os.path.exists(os.path.dirname(transcode_file)):
+        os.makedirs(os.path.dirname(transcode_file))
 
-        lame_encoder = 'lame -S %(OPTS)s - %(FILE)s > /dev/null 2> /dev/null'
-        ogg_encoder = 'oggenc -Q %(OPTS)s -o %(FILE)s - > /dev/null 2> /dev/null'
-        ffmpeg_encoder = 'ffmpeg %(OPTS)s %(FILE)s > /dev/null 2> /dev/null'
-        nero_encoder = 'neroAacEnc %(OPTS)s -if - -of %(FILE)s > /dev/null 2> /dev/null'
-        flac_encoder = 'flac %(OPTS)s -o %(FILE)s - > /dev/null 2> /dev/null'
+    # determine the correct transcoding process
+    flac_decoder = 'flac -dcs -- %(FLAC)s'
 
-        dither_command = 'sox -t wav - -b 16 -r 44100 -t wav -'
+    lame_encoder = 'lame -S %(OPTS)s - %(FILE)s'
+    ogg_encoder = 'oggenc -Q %(OPTS)s -o %(FILE)s -'
+    ffmpeg_encoder = 'ffmpeg %(OPTS)s %(FILE)s'
+    nero_encoder = 'neroAacEnc %(OPTS)s -if - -of %(FILE)s'
+    flac_encoder = 'flac %(OPTS)s -o %(FILE)s -'
 
-        transcoding_steps = [flac_decoder]
+    dither_command = 'sox -t wav - -b 16 -r 44100 -t wav -'
 
-        if self.dither:
-            transcoding_steps.append(dither_command)
+    transcoding_steps = [flac_decoder]
 
-        if encoders[self.codec]['enc'] == 'lame':
-            transcoding_steps.append(lame_encoder)
-            transcode_file += ".mp3"
-        elif encoders[self.codec]['enc'] == 'oggenc':
-            transcoding_steps.append(ogg_encoder)
-            transcode_file += ".ogg"
-        elif encoders[self.codec]['enc'] == 'ffmpeg':
-            transcoding_steps.append(ffmpeg_encoder)
-            transcode_file += ".alac"
-        elif encoders[self.codec]['enc'] == 'neroAacEnc':
-            transcoding_steps.append(nero_encoder)
-            transcode_file += ".m4a"
-        elif encoders[self.codec]['enc'] == 'flac':
-            transcoding_steps.append(flac_encoder)
-            transcode_file += ".flac"
+    if dither:
+        transcoding_steps.append(dither_command)
 
-        transcode_args = {
-            'FLAC' : pipes.quote(self.flac_file),
-            'FILE' : pipes.quote(transcode_file),
-            'OPTS' : encoders[self.codec]['opts']
-        }
+    if encoders[output_format]['enc'] == 'lame':
+        transcoding_steps.append(lame_encoder)
+        transcode_file += ".mp3"
+    elif encoders[output_format]['enc'] == 'oggenc':
+        transcoding_steps.append(ogg_encoder)
+        transcode_file += ".ogg"
+    elif encoders[output_format]['enc'] == 'ffmpeg':
+        transcoding_steps.append(ffmpeg_encoder)
+        transcode_file += ".alac"
+    elif encoders[output_format]['enc'] == 'neroAacEnc':
+        transcoding_steps.append(nero_encoder)
+        transcode_file += ".m4a"
+    elif encoders[output_format]['enc'] == 'flac':
+        transcoding_steps.append(flac_encoder)
+        transcode_file += ".flac"
 
-        transcode_command = ' | '.join(transcoding_steps) % transcode_args
+    transcode_args = {
+        'FLAC' : pipes.quote(flac_file.encode(sys.getfilesystemencoding())),
+        'FILE' : pipes.quote(transcode_file.encode(sys.getfilesystemencoding())),
+        'OPTS' : encoders[output_format]['opts']
+    }
 
-        if self.dither and self.codec == 'FLAC':
-            # for some reason, FLAC | SoX | FLAC does not work.
-            # use files instead.
-            transcode_args['TEMP'] = pipes.quote(self.flac_file + ".wav")
-            transcode_command = ''.join([flac_decoder, ' | ', dither_command, ' > %(TEMP)s; ', \
-                    flac_encoder, ' < %(TEMP)s; rm %(TEMP)s']) % transcode_args
+    transcode_command = ' | '.join(transcoding_steps) % transcode_args
+
+    if output_format == 'FLAC' and dither:
+        # for some reason, FLAC | SoX | FLAC does not work.
+        # use files instead.
+        transcode_args['TEMP'] = tempfile.mkstemp('.wav')
+        transcode_command = ''.join([flac_decoder, ' | ', dither_command, ' > %(TEMP)s; ', \
+                flac_encoder, ' < %(TEMP)s; rm %(TEMP)s']) % transcode_args
         
-        # transcode the file
-        try:
-            os.system(transcode_command)
-        except UnicodeEncodeError:
-            os.system(transcode_command.encode('utf-8'))
+    subprocess.check_call(transcode_command, shell=True)
 
-        # tag the file
-        transcode_info = mediafile.MediaFile(transcode_file)
-        skip = ['format', 'type', 'bitrate', 'mgfile', 'save']
-        for attribute in dir(flac_info):
-            if not attribute.startswith('_') and attribute not in skip:
-                try:
-                    setattr(transcode_info, attribute, getattr(flac_info, attribute))
-                except:
-                    continue
-        transcode_info.save()
+    # tag the file
+    transcode_info = mediafile.MediaFile(transcode_file)
+    skip = ['format', 'type', 'bitrate', 'mgfile', 'save']
+    for attribute in dir(flac_info):
+        if not attribute.startswith('_') and attribute not in skip:
+            try:
+                setattr(transcode_info, attribute, getattr(flac_info, attribute))
+            except:
+                continue
 
-        self.cv.acquire()
-        self.cv.notify_all()
-        self.cv.release()
+    transcode_info.save()
 
-        return 0
+    return transcode_file
 
-def get_transcode_dir(flac_dir, codec, dither, output_dir=None):
-    if output_dir is None:
-        transcode_dir = flac_dir
-    else:
-        transcode_dir = os.path.join(output_dir, os.path.basename(flac_dir))
+def get_transcode_dir(flac_dir, output_format, dither):
+    transcode_dir = flac_dir
 
     if 'FLAC' in flac_dir.upper():
-        transcode_dir = re.sub(re.compile('FLAC', re.I), codec, transcode_dir)
+        transcode_dir = re.sub(re.compile('FLAC', re.I), output_format, transcode_dir)
     else:
-        transcode_dir = transcode_dir + " (" + codec + ")"
-        if codec != 'FLAC':
+        transcode_dir = transcode_dir + " (" + output_format + ")"
+        if output_format != 'FLAC':
             transcode_dir = re.sub(re.compile('FLAC', re.I), '', transcode_dir)
     if dither:
         if '24' in flac_dir and '96' in flac_dir:
             # XXX: theoretically, this could replace part of the album title too.
             # e.g. "24 days in 96 castles - [24-96]" would become "16 days in 44 castles - [16-44]"
-            transcode_dir = re.sub(re.compile('24', re.I), '16', transcode_dir)
-            transcode_dir = re.sub(re.compile('96', re.I), '44', transcode_dir)
+            transcode_dir = transcode_dir.replace('24', '16')
+            transcode_dir = transcode_dir.replace('96', '44')
         else:
             transcode_dir += " [16-44]"
 
     return transcode_dir
 
-def is_24bit(flac_dir):
-    for path, dirs, files in os.walk(flac_dir, topdown=False):
-        for name in files:
-            canonical = os.path.join(path, name)
-            ext = os.path.splitext(name)[-1].lower()
-            if ext == '.flac':
-                flac_info = mediafile.MediaFile(canonical)
-                bits_per_sample = flac_info.mgfile.info.bits_per_sample
-                return bits_per_sample > 16
-    return False
-
-def transcode(flac_dir, codec, max_threads=cpu_count(), output_dir=None):
-    '''transcode a directory of FLACs to another format'''
-    if codec not in encoders.keys():
-        return None
-    
+def transcode_release(flac_dir, output_format, max_threads=None):
+    '''
+    Transcode a FLAC release into another format.
+    '''
     flac_dir = os.path.abspath(flac_dir)
-    flac_files = []
-    log_files = []
-    images = []
-
-    # classify the files
-    for path, dirs, files in os.walk(flac_dir, topdown=False):
-        for name in files:
-            canonical = os.path.join(path, name)
-            ext = os.path.splitext(name)[-1].lower()
-            if ext == '.flac':
-                flac_files.append(canonical)
-            elif ext == '.log':
-                log_files.append(canonical)
-            elif ext in ['.jpg', '.png', '.gif']:
-                images.append(canonical)
-
-    # determine sample rate & bits per sample
-    flac_info = mediafile.MediaFile(flac_files[0])
-    sample_rate = flac_info.mgfile.info.sample_rate
-    bits_per_sample = flac_info.mgfile.info.bits_per_sample
+    flac_files = locate(flac_dir, ext_matcher('.flac'))
 
     # check if we need to dither to 16/44
-    if sample_rate > 48000 or bits_per_sample > 16:
-        dither = True
-    else:
-        dither = False
+    dither = is_24bit(flac_dir)
 
     # check if we need to encode
-    if dither == False and codec == 'FLAC':
+    if output_format == 'FLAC' and not dither:
         return flac_dir
 
     # make a new directory for the transcoded files
-    transcode_dir = get_transcode_dir(flac_dir, codec, dither, output_dir)
+    transcode_dir = get_transcode_dir(flac_dir, output_format, dither)
     if not os.path.exists(transcode_dir):
         os.makedirs(transcode_dir)
 
     # create transcoding threads
-    threads = []
-    cv = threading.Condition()
-    for flac_file in flac_files:
-        cv.acquire()
-        while threading.active_count() == (max_threads + 1):
-            cv.wait()
-        cv.release()
-        t = Transcode(flac_file, flac_dir, transcode_dir, codec, dither, cv)
-        t.start()
-        threads.append(t)
+    pool = multiprocessing.Pool(max_threads)
+    for filename in flac_files:
+        pool.apply_async(transcode, (filename, os.path.dirname(filename).replace(flac_dir, transcode_dir), output_format))
 
-    for t in threads:
-        t.join()
-    
+    pool.close()
+    pool.join()
+
     # copy other files
-    for path, dirs, files in os.walk(flac_dir, topdown=False):
-        for name in files:
-            ext = os.path.splitext(name)[-1].lower()
-            if ext in ['.cue', '.gif', '.jpeg', '.jpg', '.log', '.md5', '.nfo', '.pdf', '.png', '.sfv', '.txt']:
-                d = re.sub(re.escape(flac_dir), transcode_dir, path)
-                if not os.path.exists(d):
-                    os.makedirs(d)
-                shutil.copy(os.path.join(path, name), d)
+    allowed_extensions = ['.cue', '.gif', '.jpeg', '.jpg', '.log', '.md5', '.nfo', '.pdf', '.png', '.sfv', '.txt']
+    allowed_files = locate(flac_dir, ext_matcher(*allowed_extensions))
+    for filename in allowed_files:
+        new_dir = os.path.dirname(filename).replace(flac_dir, transcode_dir)
+        if not os.path.exists(new_dir):
+            os.makedirs(new_dir)
+        shutil.copy(filename, new_dir)
 
     return transcode_dir
 

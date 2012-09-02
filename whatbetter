@@ -105,7 +105,7 @@ def main():
             if os.path.exists(flac_dir):
                 print('Adding format %s...' % format)
                 try:
-                    transcode_dir = transcode.transcode(flac_dir, format, max_threads=args.threads, output_dir=data_dir)
+                    transcode_dir = transcode.transcode_release(flac_dir, format, max_threads=args.threads)
                     new_torrent = transcode.make_torrent(transcode_dir, tempfile.mkdtemp(), api.tracker, api.passkey)
                     api.upload(group, torrent, new_torrent, format)
                     shutil.copy(new_torrent, torrent_dir)
