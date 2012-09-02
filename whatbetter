@@ -50,7 +50,7 @@ def main():
         config.set('whatcd', 'torrent_dir', '')
         config.set('whatcd', 'formats', 'flac, v0, 320, v2, aac')
         config.write(open(args.config, 'w'))
-        print('Please edit the configuration file: %s' % args.config)
+        print 'Please edit the configuration file: %s' % args.config
         sys.exit(2)
     finally:
         username = config.get('whatcd', 'username')
@@ -59,7 +59,7 @@ def main():
         torrent_dir = os.path.expanduser(config.get('whatcd', 'torrent_dir'))
         supported_formats = [format.strip().upper() for format in config.get('whatcd', 'formats').split(',')]
 
-    print('Logging in to What.CD...')
+    print 'Logging in to What.CD...'
     api = whatapi.WhatAPI(username, password)
 
     try:
@@ -68,7 +68,7 @@ def main():
         seen = set()
         pickle.dump(seen, open(args.cache, 'wb'))
 
-    print('Searching for transcode candidates...')
+    print 'Searching for transcode candidates...'
     if args.release_urls:
         candidates = [(int(query['id']), int(query['torrentid'])) for query in\
                 [dict(urlparse.parse_qsl(url.split('?')[-1])) for url in args.release_urls]]
@@ -103,17 +103,18 @@ def main():
     
         for format in needed:
             if os.path.exists(flac_dir):
-                print('Adding format %s...' % format)
+                print 'Adding format %s...' % format,
                 try:
                     transcode_dir = transcode.transcode_release(flac_dir, format, max_threads=args.threads)
                     new_torrent = transcode.make_torrent(transcode_dir, tempfile.mkdtemp(), api.tracker, api.passkey)
                     api.upload(group, torrent, new_torrent, format)
                     shutil.copy(new_torrent, torrent_dir)
+                    print "done!"
                     if args.single: break
                 except Exception as e:
                     print "Error adding format %s: %s" % (format, e)
             else:
-                print("Path not found - skipping: %s" % flac_dir)
+                print "Path not found - skipping: %s" % flac_dir
                 break
 
         seen.add(str(torrentid))

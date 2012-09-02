@@ -102,7 +102,7 @@ def transcode(flac_file, output_dir, output_format):
         transcode_command = ''.join([flac_decoder, ' | ', dither_command, ' > %(TEMP)s; ', \
                 flac_encoder, ' < %(TEMP)s; rm %(TEMP)s']) % transcode_args
         
-    subprocess.check_call(transcode_command, shell=True)
+    subprocess.check_output(transcode_command, shell=True, stderr=subprocess.STDOUT)
 
     # tag the file
     transcode_info = mediafile.MediaFile(transcode_file)
@@ -184,5 +184,6 @@ def make_torrent(input_dir, output_dir, tracker, passkey):
         'tracker' : tracker,
         'passkey' : passkey,
     }
-    subprocess.call(["mktorrent", "-p", "-a", tracker_url, "-o", torrent, input_dir.encode(sys.getfilesystemencoding())])
+    command = ["mktorrent", "-p", "-a", tracker_url, "-o", torrent, input_dir.encode(sys.getfilesystemencoding())]
+    subprocess.check_output(command, stderr=subprocess.STDOUT)
     return torrent

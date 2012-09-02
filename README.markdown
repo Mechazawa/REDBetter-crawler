@@ -16,11 +16,10 @@ Installation
 You're going to need to install a few dependencies before using
 whatbetter.
 
-First and foremost, you will need Python installed. I recommend using
-the latest version of Python 2.x (Python 3 is unsupported at this time).
+First and foremost, you will need Python 2.7 or newer.
 
-Once you've got Python installed, you need several modules: mechanize,
-mutagen, requests, and argparse. Try this:
+Once you've got Python installed, you will need a few modules: mechanize,
+mutagen, and requests. Try this:
 
     $ pip install -r requirements.txt
 
@@ -33,11 +32,11 @@ This should theoretically install all required dependencies
 automatically.
 
 Furthermore, you need several external programs: mktorrent, flac, lame,
-oggenc, ffmpeg, and neroAacEnc. The method of installing these programs
+sox, and neroAacEnc. The method of installing these programs
 varies depending on your operating system, but if you're using something
 like Ubuntu you can do this:
 
-    # aptitude install mktorrent flac lame vorbis-tools ffmpeg
+    # aptitude install mktorrent flac lame sox
 
 For neroAacEnc, you need to download the encoder from
 [nero](http://www.nero.com/eng/downloads-nerodigital-nero-aac-codec.php),
@@ -66,8 +65,8 @@ like this:
     formats = flac, v0, 320, v2, aac
 
 `username` and `password` are your What.CD login credentials. 
-`data\_dir` is the directory where your downloads are stored. 
-`torrent\_dir` is the directory where torrents should be created (e.g.,
+`data_dir` is the directory where your downloads are stored. 
+`torrent_dir` is the directory where torrents should be created (e.g.,
 your watch directory). `formats` is a list of formats that you'd like to
 support (so if you don't want to upload AAC, just remove it from this
 list).
@@ -109,6 +108,6 @@ take a while):
     $ whatbetter
 
 To transcode and upload a specific release (provided you have already
-downloaded the FLAC and it is located in your data\_dir):
+downloaded the FLAC and it is located in your `data_dir`):
 
     $ whatbetter http://what.cd/torrents.php?id=1000&torrentid=1000000

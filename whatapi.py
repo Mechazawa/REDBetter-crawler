@@ -148,7 +148,7 @@ class WhatAPI:
         form.find_control('media').set('1', torrent['media'])
         form['release_desc'] = 'Created with [url=http://github.com/zacharydenton/whatbetter]whatbetter[/url].'
         _, data, headers = form.click_request_data()
-        response = self.session.post(url, data=data, headers=dict(headers))
+        return self.session.post(url, data=data, headers=dict(headers))
 
     def set_24bit(self, torrent):
         url = "https://what.cd/torrents.php?action=edit&id=%s" % torrent['id']
@@ -157,7 +157,7 @@ class WhatAPI:
         form = forms[-3]
         form.find_control('bitrate').set('1', '24bit Lossless')
         _, data, headers = form.click_request_data()
-        response = self.session.post(url, data=data, headers=dict(headers))
+        return self.session.post(url, data=data, headers=dict(headers))
 
 def unescape(text):
     return HTMLParser.HTMLParser().unescape(text)

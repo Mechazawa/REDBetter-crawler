@@ -21,7 +21,6 @@ setup(
     install_requires = [
         'mutagen',
         'mechanize',
-        'argparse',
         'requests'
     ]
 )
