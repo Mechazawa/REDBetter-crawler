@@ -39,7 +39,7 @@ class Transcode(threading.Thread):
 
         # determine the new filename
         transcode_file = re.sub(re.escape(self.flac_dir), self.transcode_dir, self.flac_file)
-        transcode_file = re.sub('\.flac$', '', transcode_file)
+        transcode_file = os.path.splitext(transcode_file)[0]
 
         try:
             os.makedirs(os.path.dirname(transcode_file))
@@ -145,7 +145,8 @@ def is_24bit(flac_dir):
     for path, dirs, files in os.walk(flac_dir, topdown=False):
         for name in files:
             canonical = os.path.join(path, name)
-            if fnmatch.fnmatch(name, '*.flac'):
+            ext = os.path.splitext(name)[-1].lower()
+            if ext == '.flac':
                 flac_info = mediafile.MediaFile(canonical)
                 bits_per_sample = flac_info.mgfile.info.bits_per_sample
                 return bits_per_sample > 16
@@ -165,11 +166,12 @@ def transcode(flac_dir, codec, max_threads=cpu_count(), output_dir=None):
     for path, dirs, files in os.walk(flac_dir, topdown=False):
         for name in files:
             canonical = os.path.join(path, name)
-            if fnmatch.fnmatch(name, '*.flac'):
+            ext = os.path.splitext(name)[-1].lower()
+            if ext == '.flac':
                 flac_files.append(canonical)
-            elif fnmatch.fnmatch(name, '*.log'):
+            elif ext == '.log':
                 log_files.append(canonical)
-            elif fnmatch.fnmatch(name, '*.jpg'):
+            elif ext in ['.jpg', '.png', '.gif']:
                 images.append(canonical)
 
     # determine sample rate & bits per sample
@@ -210,7 +212,8 @@ def transcode(flac_dir, codec, max_threads=cpu_count(), output_dir=None):
     # copy other files
     for path, dirs, files in os.walk(flac_dir, topdown=False):
         for name in files:
-            if os.path.splitext(name)[1] in ['.cue', '.gif', '.jpeg', '.jpg', '.log', '.md5', '.nfo', '.pdf', '.png', '.sfv', '.txt']:
+            ext = os.path.splitext(name)[-1].lower()
+            if ext in ['.cue', '.gif', '.jpeg', '.jpg', '.log', '.md5', '.nfo', '.pdf', '.png', '.sfv', '.txt']:
                 d = re.sub(re.escape(flac_dir), transcode_dir, path)
                 if not os.path.exists(d):
                     os.makedirs(d)
