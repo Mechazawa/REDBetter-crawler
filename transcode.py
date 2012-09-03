@@ -189,3 +189,22 @@ def make_torrent(input_dir, output_dir, tracker, passkey):
     command = ["mktorrent", "-p", "-a", tracker_url, "-o", torrent, input_dir.encode(sys.getfilesystemencoding())]
     subprocess.check_output(command, stderr=subprocess.STDOUT)
     return torrent
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input_dir')
+    parser.add_argument('output_dir')
+    parser.add_argument('output_format', choices=encoders.keys())
+    parser.add_argument('-j', '--threads', default=multiprocessing.cpu_count())
+    args = parser.parse_args()
+
+    pool = multiprocessing.Pool(args.threads)
+    for filename in locate(args.input_dir, ext_matcher('.flac')):
+        transcode_dir = os.path.dirname(filename).replace(args.input_dir, args.output_dir)
+        pool.apply_async(transcode, (filename, transcode_dir, args.output_format))
+
+    pool.close()
+    pool.join()
+
+if __name__ == "__main__": main()
