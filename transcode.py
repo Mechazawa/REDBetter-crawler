@@ -5,6 +5,7 @@ import sys
 import pipes
 import shutil
 import fnmatch
+import tempfile
 import subprocess
 import multiprocessing
 import mediafile
@@ -48,6 +49,7 @@ def transcode(flac_file, output_dir, output_format):
     flac_info = mediafile.MediaFile(flac_file)
     sample_rate = flac_info.mgfile.info.sample_rate
     bits_per_sample = flac_info.mgfile.info.bits_per_sample
+    channels = flac_info.mgfile.info.channels
     dither = sample_rate > 48000 or bits_per_sample > 16
 
     # determine the new filename
@@ -64,9 +66,13 @@ def transcode(flac_file, output_dir, output_format):
     nero_encoder = 'neroAacEnc %(OPTS)s -if - -of %(FILE)s'
     flac_encoder = 'flac %(OPTS)s -o %(FILE)s -'
 
+    downmix_command = 'sox -t wav - -c 2 -t wav -'
     dither_command = 'sox -t wav - -b 16 -r 44100 -t wav -'
 
     transcoding_steps = [flac_decoder]
+
+    if channels > 2:
+        transcoding_steps.append(downmix_command)
 
     if dither:
         transcoding_steps.append(dither_command)
@@ -96,12 +102,8 @@ def transcode(flac_file, output_dir, output_format):
     transcode_command = ' | '.join(transcoding_steps) % transcode_args
 
     if output_format == 'FLAC' and dither:
-        # for some reason, FLAC | SoX | FLAC does not work.
-        # use files instead.
-        transcode_args['TEMP'] = tempfile.mkstemp('.wav')
-        transcode_command = ''.join([flac_decoder, ' | ', dither_command, ' > %(TEMP)s; ', \
-                flac_encoder, ' < %(TEMP)s; rm %(TEMP)s']) % transcode_args
-        
+        transcode_command = 'sox %(FLAC)s -r 44100 -b 16 %(FILE)s' % transcode_args
+
     subprocess.check_output(transcode_command, shell=True, stderr=subprocess.STDOUT)
 
     # tag the file
