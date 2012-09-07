@@ -83,10 +83,16 @@ def main():
         print "Release found: %s (%s)" % (whatapi.unescape(group['group']['name']), group['group']['year'])
         
         if not torrent['filePath']:
-            print "This release is not enclosed within its own directory. Skipping..."
-            continue
-
-        flac_dir = os.path.join(data_dir, whatapi.unescape(torrent['filePath']))
+            flac_file = os.path.join(data_dir, whatapi.unescape(torrent['fileList']).split('{{{')[0])
+            if not os.path.exists(flac_file):
+                print "Path not found - skipping: %s" % flac_file
+                continue
+            flac_dir = os.path.join(data_dir, "%s (%s) [FLAC]" % (whatapi.unescape(group['group']['name']), group['group']['year']))
+            if not os.path.exists(flac_dir):
+                os.makedirs(flac_dir)
+            shutil.copy(flac_file, flac_dir)
+        else:
+            flac_dir = os.path.join(data_dir, whatapi.unescape(torrent['filePath']))
 
         if transcode.is_24bit(flac_dir) and torrent['encoding'] != '24bit Lossless':
             # A lot of people are uploading FLACs from Bandcamp without realizing

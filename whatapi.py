@@ -121,9 +121,9 @@ class WhatAPI:
         page = 1
         done = False
         url = 'https://what.cd/torrents.php?type=snatched&userid=%s&format=FLAC' % self.userid
+        pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)')
         while not done:
             content = self.session.get(url + "&page=%s" % page).text
-            pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)')
             for groupid, torrentid in pattern.findall(content):
                 if skip is None or torrentid not in skip:
                     yield int(groupid), int(torrentid)
@@ -133,7 +133,7 @@ class WhatAPI:
     def upload(self, group, torrent, new_torrent, format):
         url = "https://what.cd/upload.php?groupid=%s" % group['group']['id']
         response = self.session.get(url)
-        forms = mechanize.ParseFile(StringIO(response.text), url)
+        forms = mechanize.ParseFile(StringIO(response.text.encode('utf-8')), url)
         form = forms[-1]
         form.find_control('file_input').add_file(open(new_torrent), 'application/x-bittorrent', os.path.basename(new_torrent))
         if torrent['remastered']:
@@ -153,7 +153,7 @@ class WhatAPI:
     def set_24bit(self, torrent):
         url = "https://what.cd/torrents.php?action=edit&id=%s" % torrent['id']
         response = self.session.get(url)
-        forms = mechanize.ParseFile(StringIO(response.text), url)
+        forms = mechanize.ParseFile(StringIO(response.text.encode('utf-8')), url)
         form = forms[-3]
         form.find_control('bitrate').set('1', '24bit Lossless')
         _, data, headers = form.click_request_data()
