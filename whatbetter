@@ -71,7 +71,7 @@ def main():
     print 'Searching for transcode candidates...'
     if args.release_urls:
         candidates = [(int(query['id']), int(query['torrentid'])) for query in\
-                [dict(urlparse.parse_qsl(url.split('?')[-1])) for url in args.release_urls]]
+                [dict(urlparse.parse_qsl(urlparse.urlparse(url).query)) for url in args.release_urls]]
     else:
         candidates = api.snatched(skip=seen)
 
