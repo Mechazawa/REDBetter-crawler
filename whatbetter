@@ -5,6 +5,7 @@ import shutil
 import argparse
 import tempfile
 import urlparse
+import subprocess
 import ConfigParser
 import cPickle as pickle
 from multiprocessing import cpu_count
@@ -94,16 +95,20 @@ def main():
         else:
             flac_dir = os.path.join(data_dir, whatapi.unescape(torrent['filePath']))
 
-        if transcode.is_24bit(flac_dir) and torrent['encoding'] != '24bit Lossless':
-            # A lot of people are uploading FLACs from Bandcamp without realizing
-            # that they're actually 24 bit files (usually 24/44.1). Since we know for
-            # sure whether the files are 24 bit, we might as well correct the listing
-            # on the site (and get an extra upload in the process).
-            print "Marking release as 24bit lossless."
-            api.set_24bit(torrent)
-            group = api.request('torrentgroup', id=groupid)
-            torrent = [t for t in group['torrents'] if t['id'] == torrentid][0]
-
+        try:
+            if transcode.is_24bit(flac_dir) and torrent['encoding'] != '24bit Lossless':
+                # A lot of people are uploading FLACs from Bandcamp without realizing
+                # that they're actually 24 bit files (usually 24/44.1). Since we know for
+                # sure whether the files are 24 bit, we might as well correct the listing
+                # on the site (and get an extra upload in the process).
+                print "Marking release as 24bit lossless."
+                api.set_24bit(torrent)
+                group = api.request('torrentgroup', id=groupid)
+                torrent = [t for t in group['torrents'] if t['id'] == torrentid][0]
+        except Exception as e:
+            print "Error: %s - skipping" % e
+            continue
+    
         needed = formats_needed(group, torrent, supported_formats)
         print "Formats needed: %s" % ', '.join(needed)
     
