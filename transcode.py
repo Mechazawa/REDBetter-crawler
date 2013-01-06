@@ -120,8 +120,8 @@ def transcode(flac_file, output_dir, output_format):
 
     return transcode_file
 
-def get_transcode_dir(flac_dir, output_format, dither):
-    transcode_dir = flac_dir
+def get_transcode_dir(flac_dir, output_dir, output_format, dither):
+    transcode_dir = os.path.basename(flac_dir)
 
     if 'FLAC' in flac_dir.upper():
         transcode_dir = re.sub(re.compile('FLAC', re.I), output_format, transcode_dir)
@@ -138,13 +138,14 @@ def get_transcode_dir(flac_dir, output_format, dither):
         else:
             transcode_dir += " [16-44]"
 
-    return transcode_dir
+    return os.path.join(output_dir, transcode_dir)
 
-def transcode_release(flac_dir, output_format, max_threads=None):
+def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
     '''
     Transcode a FLAC release into another format.
     '''
     flac_dir = os.path.abspath(flac_dir)
+    output_dir = os.path.abspath(output_dir)
     flac_files = locate(flac_dir, ext_matcher('.flac'))
 
     # check if we need to dither to 16/44
@@ -152,10 +153,14 @@ def transcode_release(flac_dir, output_format, max_threads=None):
 
     # check if we need to encode
     if output_format == 'FLAC' and not dither:
+        # XXX: if output_dir is not the same as flac_dir, this may not
+        # do what the user expects.
+        if output_dir != os.path.dirname(flac_dir):
+            print "Warning: no encode necessary, so files won't be placed in", output_dir
         return flac_dir
 
     # make a new directory for the transcoded files
-    transcode_dir = get_transcode_dir(flac_dir, output_format, dither)
+    transcode_dir = get_transcode_dir(flac_dir, output_dir, output_format, dither)
     if not os.path.exists(transcode_dir):
         os.makedirs(transcode_dir)
 

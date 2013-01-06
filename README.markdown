@@ -61,11 +61,14 @@ like this:
     username =
     password = 
     data_dir =
+    output_dir =
     torrent_dir =
     formats = flac, v0, 320, v2, aac
 
 `username` and `password` are your What.CD login credentials. 
 `data_dir` is the directory where your downloads are stored. 
+`output_dir` is the directory where your transcodes will be created. If
+the value is blank, `data_dir` will be used.
 `torrent_dir` is the directory where torrents should be created (e.g.,
 your watch directory). `formats` is a list of formats that you'd like to
 support (so if you don't want to upload AAC, just remove it from this
@@ -77,6 +80,7 @@ You should end up with something like this:
     username = RequestBunny
     password = clapton
     data_dir = /srv/downloads
+    output_dir =
     torrent_dir = /srv/torrents
     formats = flac, v0, 320
 

@@ -48,6 +48,7 @@ def main():
         config.set('whatcd', 'username', '')
         config.set('whatcd', 'password', '')
         config.set('whatcd', 'data_dir', '')
+        config.set('whatcd', 'output_dir', '')
         config.set('whatcd', 'torrent_dir', '')
         config.set('whatcd', 'formats', 'flac, v0, 320, v2, aac')
         config.write(open(args.config, 'w'))
@@ -57,6 +58,12 @@ def main():
         username = config.get('whatcd', 'username')
         password = config.get('whatcd', 'password')
         data_dir = os.path.expanduser(config.get('whatcd', 'data_dir'))
+        try:
+            output_dir = os.path.expanduser(config.get('whatcd', 'output_dir'))
+        except ConfigParser.NoOptionError:
+            output_dir = None
+        if not output_dir:
+            output_dir = data_dir
         torrent_dir = os.path.expanduser(config.get('whatcd', 'torrent_dir'))
         supported_formats = [format.strip().upper() for format in config.get('whatcd', 'formats').split(',')]
 
@@ -116,7 +123,7 @@ def main():
             if os.path.exists(flac_dir):
                 print 'Adding format %s...' % format,
                 try:
-                    transcode_dir = transcode.transcode_release(flac_dir, format, max_threads=args.threads)
+                    transcode_dir = transcode.transcode_release(flac_dir, output_dir, format, max_threads=args.threads)
                     new_torrent = transcode.make_torrent(transcode_dir, tempfile.mkdtemp(), api.tracker, api.passkey)
                     api.upload(group, torrent, new_torrent, format)
                     shutil.copy(new_torrent, torrent_dir)
