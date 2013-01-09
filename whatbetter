@@ -122,17 +122,18 @@ def main():
         for format in needed:
             if os.path.exists(flac_dir):
                 print 'Adding format %s...' % format,
+                tmpdir = tempfile.mkdtemp()
                 try:
                     transcode_dir = transcode.transcode_release(flac_dir, output_dir, format, max_threads=args.threads)
-                    tmpdir = tempfile.mkdtemp()
                     new_torrent = transcode.make_torrent(transcode_dir, tmpdir, api.tracker, api.passkey)
                     api.upload(group, torrent, new_torrent, format)
                     shutil.copy(new_torrent, torrent_dir)
-                    shutil.rmtree(tmpdir)
                     print "done!"
                     if args.single: break
                 except Exception as e:
                     print "Error adding format %s: %s" % (format, e)
+                finally:
+                    shutil.rmtree(tmpdir)
             else:
                 print "Path not found - skipping: %s" % flac_dir
                 break
