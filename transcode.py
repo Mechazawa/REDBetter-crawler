@@ -20,6 +20,9 @@ encoders = {
     'FLAC': {'enc': 'flac',     'opts': '--best'}
 }
 
+class TranscodeException(Exception):
+    pass
+
 def locate(root, match_function):
     '''
     Yields all filenames within the root directory for which match_function return True.
@@ -163,6 +166,8 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
     transcode_dir = get_transcode_dir(flac_dir, output_dir, output_format, dither)
     if not os.path.exists(transcode_dir):
         os.makedirs(transcode_dir)
+    else:
+        raise TranscodeException('transcode output directory "%s" already exists' % transcode_dir)
 
     # create transcoding threads
     pool = multiprocessing.Pool(max_threads)
