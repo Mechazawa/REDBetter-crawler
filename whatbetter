@@ -124,9 +124,11 @@ def main():
                 print 'Adding format %s...' % format,
                 try:
                     transcode_dir = transcode.transcode_release(flac_dir, output_dir, format, max_threads=args.threads)
-                    new_torrent = transcode.make_torrent(transcode_dir, tempfile.mkdtemp(), api.tracker, api.passkey)
+                    tmpdir = tempfile.mkdtemp()
+                    new_torrent = transcode.make_torrent(transcode_dir, tmpdir, api.tracker, api.passkey)
                     api.upload(group, torrent, new_torrent, format)
                     shutil.copy(new_torrent, torrent_dir)
+                    shutil.rmtree(tmpdir)
                     print "done!"
                     if args.single: break
                 except Exception as e:
