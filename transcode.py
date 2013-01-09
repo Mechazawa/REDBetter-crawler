@@ -209,12 +209,6 @@ def main():
     parser.add_argument('-j', '--threads', default=multiprocessing.cpu_count())
     args = parser.parse_args()
 
-    pool = multiprocessing.Pool(args.threads)
-    for filename in locate(args.input_dir, ext_matcher('.flac')):
-        transcode_dir = os.path.dirname(filename).replace(args.input_dir, args.output_dir)
-        pool.apply_async(transcode, (filename, transcode_dir, args.output_format))
-
-    pool.close()
-    pool.join()
+    transcode_release(os.path.expanduser(args.input_dir), os.path.expanduser(args.output_dir), args.output_format, args.threads)
 
 if __name__ == "__main__": main()
