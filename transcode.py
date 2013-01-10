@@ -44,6 +44,10 @@ def is_24bit(flac_dir):
     flacs = (mediafile.MediaFile(flac_file) for flac_file in locate(flac_dir, ext_matcher('.flac')))
     return any(flac.mgfile.info.bits_per_sample > 16 for flac in flacs)
 
+# Pool.map() can't pickle lambdas, so we need a helper function.
+def pool_transcode((flac_file, output_dir, output_format)):
+    return transcode(flac_file, output_dir, output_format)
+
 def transcode(flac_file, output_dir, output_format):
     '''
     Transcodes a FLAC file into another format.
@@ -170,10 +174,18 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
         raise TranscodeException('transcode output directory "%s" already exists' % transcode_dir)
 
     # create transcoding threads
+    #
+    # Use Pool.map() rather than Pool.apply_async() as it will raise
+    # exceptions synchronously. (Don't want to waste any more time
+    # when a transcode breaks.)
+    #
+    # XXX: actually, use Pool.map_async() and then get() the result
+    # with a large timeout, as a workaround for a KeyboardInterrupt in
+    # Pool.join(). c.f.,
+    # http://stackoverflow.com/questions/1408356/keyboard-interrupts-with-pythons-multiprocessing-pool?rq=1
     pool = multiprocessing.Pool(max_threads)
-    for filename in flac_files:
-        pool.apply_async(transcode, (filename, os.path.dirname(filename).replace(flac_dir, transcode_dir), output_format))
-
+    result = pool.map_async(pool_transcode, [(filename, os.path.dirname(filename).replace(flac_dir, transcode_dir), output_format) for filename in flac_files])
+    result.get(60 * 60 * 12)
     pool.close()
     pool.join()
 
