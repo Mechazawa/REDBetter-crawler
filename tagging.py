@@ -70,10 +70,10 @@ def comment_get(id3, _):
 def comment_set(id3, _, value):
     id3.add(mutagen.id3.COMM(encoding=3, lang='eng', desc='', text=value))
 
-def originaldate_get(id3, key):
+def originaldate_get(id3, _):
     return [stamp.text for stamp in id3['TDOR'].text]
 
-def originaldate_set(id3, key, value):
+def originaldate_set(id3, _, value):
     id3.add(mutagen.id3.TDOR(encoding=3, text=value))
 
 EasyID3.RegisterKey('comment', comment_get, comment_set)
