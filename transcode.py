@@ -9,6 +9,8 @@ import tempfile
 import subprocess
 import multiprocessing
 import mediafile
+import shlex
+import signal
 
 encoders = {
     '320':  {'enc': 'lame',     'opts': '-b 320 --ignore-tag-errors'},
@@ -22,6 +24,46 @@ encoders = {
 
 class TranscodeException(Exception):
     pass
+
+# In most Unix shells, pipelines only report the return code of the
+# last process. We need to know if any process in the transcode
+# pipeline fails, not just the last one.
+#
+# This function constructs a pipeline of processes from a chain of
+# commands just like a shell does, but it returns the status code (and
+# stderr) of every process in the pipeline, not just the last one. The
+# results are returned as a list of (code, stderr) pairs, one pair per
+# process.
+def run_pipeline(cmds):
+    # The Python executable (and its children) ignore SIGPIPE. (See
+    # http://bugs.python.org/issue1652) Our subprocesses need to see
+    # it.
+    sigpipe_handler = signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    stdin = None
+    last_proc = None
+    procs = []
+    try:
+        for cmd in cmds:
+            proc = subprocess.Popen(shlex.split(cmd), stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if last_proc:
+                # Ensure last_proc receives SIGPIPE if proc exits first
+                last_proc.stdout.close()
+            procs.append(proc)
+            stdin = proc.stdout
+            last_proc = proc
+    finally:
+        signal.signal(signal.SIGPIPE, sigpipe_handler)
+
+    last_stderr = last_proc.communicate()[1]
+
+    results = []
+    for (cmd, proc) in zip(cmds[:-1], procs[:-1]):
+        # wait() is OK here, despite use of PIPE above; these procs
+        # are finished.
+        proc.wait()
+        results.append((proc.returncode, proc.stderr.read()))
+    results.append((last_proc.returncode, last_stderr))
+    return results
 
 def locate(root, match_function):
     '''
@@ -106,12 +148,27 @@ def transcode(flac_file, output_dir, output_format):
         'OPTS' : encoders[output_format]['opts']
     }
 
-    transcode_command = ' | '.join(transcoding_steps) % transcode_args
-
     if output_format == 'FLAC' and dither:
-        transcode_command = 'sox %(FLAC)s -r 44100 -b 16 %(FILE)s' % transcode_args
+        transcode_commands = ['sox %(FLAC)s -r 44100 -b 16 %(FILE)s' % transcode_args]
+    else:
+        transcode_commands = map(lambda cmd : cmd % transcode_args, transcoding_steps)
 
-    subprocess.check_output(transcode_command, shell=True, stderr=subprocess.STDOUT)
+    results = run_pipeline(transcode_commands)
+
+    # Check for problems. Because it's a pipeline, the earliest one is
+    # usually the source. The exception is -SIGPIPE, which is caused
+    # by "backpressure" due to a later command failing: ignore those
+    # unless no other problem is found.
+    last_sigpipe = None
+    for (cmd, (code, stderr)) in zip(transcode_commands, results):
+        if code:
+            if code == -signal.SIGPIPE:
+                last_sigpipe = (cmd, (code, stderr))
+            else:
+                raise TranscodeException('Transcode of file "%s" failed: %s' % (flac_file, stderr))
+    if last_sigpipe:
+        # XXX: this should probably never happen....
+        raise TranscodeException('Transcode of file "%s" failed: SIGPIPE' % flac_file)
 
     # tag the file
     transcode_info = mediafile.MediaFile(transcode_file)
