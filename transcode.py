@@ -224,38 +224,52 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
         return flac_dir
 
     # make a new directory for the transcoded files
+    #
+    # NB: The cleanup code that follows this block assumes that
+    # transcode_dir is a new directory created exclusively for this
+    # transcode. Do not change this assumption without considering the
+    # consequences!
     transcode_dir = get_transcode_dir(flac_dir, output_dir, output_format, dither)
     if not os.path.exists(transcode_dir):
         os.makedirs(transcode_dir)
     else:
         raise TranscodeException('transcode output directory "%s" already exists' % transcode_dir)
 
-    # create transcoding threads
-    #
-    # Use Pool.map() rather than Pool.apply_async() as it will raise
-    # exceptions synchronously. (Don't want to waste any more time
-    # when a transcode breaks.)
-    #
-    # XXX: actually, use Pool.map_async() and then get() the result
-    # with a large timeout, as a workaround for a KeyboardInterrupt in
-    # Pool.join(). c.f.,
-    # http://stackoverflow.com/questions/1408356/keyboard-interrupts-with-pythons-multiprocessing-pool?rq=1
-    pool = multiprocessing.Pool(max_threads)
-    result = pool.map_async(pool_transcode, [(filename, os.path.dirname(filename).replace(flac_dir, transcode_dir), output_format) for filename in flac_files])
-    result.get(60 * 60 * 12)
-    pool.close()
-    pool.join()
+    try:
+        # create transcoding threads
+        #
+        # Use Pool.map() rather than Pool.apply_async() as it will raise
+        # exceptions synchronously. (Don't want to waste any more time
+        # when a transcode breaks.)
+        #
+        # XXX: actually, use Pool.map_async() and then get() the result
+        # with a large timeout, as a workaround for a KeyboardInterrupt in
+        # Pool.join(). c.f.,
+        # http://stackoverflow.com/questions/1408356/keyboard-interrupts-with-pythons-multiprocessing-pool?rq=1
+        pool = multiprocessing.Pool(max_threads)
+        result = pool.map_async(pool_transcode, [(filename, os.path.dirname(filename).replace(flac_dir, transcode_dir), output_format) for filename in flac_files])
+        result.get(60 * 60 * 12)
+        pool.close()
+        pool.join()
 
-    # copy other files
-    allowed_extensions = ['.cue', '.gif', '.jpeg', '.jpg', '.log', '.md5', '.nfo', '.pdf', '.png', '.sfv', '.txt']
-    allowed_files = locate(flac_dir, ext_matcher(*allowed_extensions))
-    for filename in allowed_files:
-        new_dir = os.path.dirname(filename).replace(flac_dir, transcode_dir)
-        if not os.path.exists(new_dir):
-            os.makedirs(new_dir)
-        shutil.copy(filename, new_dir)
+        # copy other files
+        allowed_extensions = ['.cue', '.gif', '.jpeg', '.jpg', '.log', '.md5', '.nfo', '.pdf', '.png', '.sfv', '.txt']
+        allowed_files = locate(flac_dir, ext_matcher(*allowed_extensions))
+        for filename in allowed_files:
+            new_dir = os.path.dirname(filename).replace(flac_dir, transcode_dir)
+            if not os.path.exists(new_dir):
+                os.makedirs(new_dir)
+            shutil.copy(filename, new_dir)
 
-    return transcode_dir
+        return transcode_dir
+
+    except:
+        # Cleanup.
+        #
+        # ASSERT: transcode_dir was created by this function and does
+        # not contain anything other than the transcoded files!
+        shutil.rmtree(transcode_dir)
+        raise
 
 def make_torrent(input_dir, output_dir, tracker, passkey):
     torrent = os.path.join(output_dir, os.path.basename(input_dir).encode(sys.getfilesystemencoding())) + ".torrent"
