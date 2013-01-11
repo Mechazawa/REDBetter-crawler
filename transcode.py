@@ -8,9 +8,10 @@ import fnmatch
 import tempfile
 import subprocess
 import multiprocessing
-import mediafile
 import shlex
 import signal
+import mutagen.flac
+import tagging
 
 encoders = {
     '320':  {'enc': 'lame',     'opts': '-b 320 --ignore-tag-errors'},
@@ -80,8 +81,8 @@ def is_24bit(flac_dir):
     '''
     Returns True if any FLAC within flac_dir is 24 bit.
     '''
-    flacs = (mediafile.MediaFile(flac_file) for flac_file in locate(flac_dir, ext_matcher('.flac')))
-    return any(flac.mgfile.info.bits_per_sample > 16 for flac in flacs)
+    flacs = (mutagen.flac.FLAC(flac_file) for flac_file in locate(flac_dir, ext_matcher('.flac')))
+    return any(flac.info.bits_per_sample > 16 for flac in flacs)
 
 # Pool.map() can't pickle lambdas, so we need a helper function.
 def pool_transcode((flac_file, output_dir, output_format)):
@@ -92,10 +93,10 @@ def transcode(flac_file, output_dir, output_format):
     Transcodes a FLAC file into another format.
     '''
     # gather metadata from the flac file
-    flac_info = mediafile.MediaFile(flac_file)
-    sample_rate = flac_info.mgfile.info.sample_rate
-    bits_per_sample = flac_info.mgfile.info.bits_per_sample
-    channels = flac_info.mgfile.info.channels
+    flac_info = mutagen.flac.FLAC(flac_file)
+    sample_rate = flac_info.info.sample_rate
+    bits_per_sample = flac_info.info.bits_per_sample
+    channels = flac_info.info.channels
     dither = sample_rate > 48000 or bits_per_sample > 16
 
     # determine the new filename
@@ -155,17 +156,7 @@ def transcode(flac_file, output_dir, output_format):
         # XXX: this should probably never happen....
         raise TranscodeException('Transcode of file "%s" failed: SIGPIPE' % flac_file)
 
-    # tag the file
-    transcode_info = mediafile.MediaFile(transcode_file)
-    skip = ['format', 'type', 'bitrate', 'mgfile', 'save']
-    for attribute in dir(flac_info):
-        if not attribute.startswith('_') and attribute not in skip:
-            try:
-                setattr(transcode_info, attribute, getattr(flac_info, attribute))
-            except:
-                continue
-
-    transcode_info.save()
+    tagging.copy_tags(flac_file, transcode_file)
 
     return transcode_file
 
