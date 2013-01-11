@@ -50,7 +50,7 @@ def main():
         config.set('whatcd', 'data_dir', '')
         config.set('whatcd', 'output_dir', '')
         config.set('whatcd', 'torrent_dir', '')
-        config.set('whatcd', 'formats', 'flac, v0, 320, v2, aac')
+        config.set('whatcd', 'formats', 'flac, v0, 320, v2')
         config.write(open(args.config, 'w'))
         print 'Please edit the configuration file: %s' % args.config
         sys.exit(2)

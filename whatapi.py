@@ -37,10 +37,6 @@ formats = {
         'format' : 'MP3', 
         'encoding' : 'V2 (VBR)'
     },
-    'AAC': {
-        'format' : 'AAC',
-        'encoding': '320'
-    },
 }
 
 class LoginException(Exception):

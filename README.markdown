@@ -31,17 +31,12 @@ source directory):
 This should theoretically install all required dependencies
 automatically.
 
-Furthermore, you need several external programs: mktorrent, flac, lame,
-sox, and neroAacEnc. The method of installing these programs
-varies depending on your operating system, but if you're using something
-like Ubuntu you can do this:
+Furthermore, you need several external programs: mktorrent, flac,
+lame, and sox. The method of installing these programs varies
+depending on your operating system, but if you're using something like
+Ubuntu you can do this:
 
     # aptitude install mktorrent flac lame sox
-
-For neroAacEnc, you need to download the encoder from
-[nero](http://www.nero.com/eng/downloads-nerodigital-nero-aac-codec.php),
-extract it, and place the binaries somewhere on your PATH. If you're on
-a 64 bit system make sure you have `ia32-libs` installed.
 
 At this point you may execute the following command:
 
@@ -63,7 +58,7 @@ like this:
     data_dir =
     output_dir =
     torrent_dir =
-    formats = flac, v0, 320, v2, aac
+    formats = flac, v0, 320, v2
 
 `username` and `password` are your What.CD login credentials. 
 `data_dir` is the directory where your downloads are stored. 
@@ -71,7 +66,7 @@ like this:
 the value is blank, `data_dir` will be used.
 `torrent_dir` is the directory where torrents should be created (e.g.,
 your watch directory). `formats` is a list of formats that you'd like to
-support (so if you don't want to upload AAC, just remove it from this
+support (so if you don't want to upload V2, just remove it from this
 list).
 
 You should end up with something like this:

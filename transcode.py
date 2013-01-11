@@ -16,9 +16,6 @@ encoders = {
     '320':  {'enc': 'lame',     'opts': '-b 320 --ignore-tag-errors'},
     'V0':   {'enc': 'lame',     'opts': '-V 0 --vbr-new --ignore-tag-errors'},
     'V2':   {'enc': 'lame',     'opts': '-V 2 --vbr-new --ignore-tag-errors'},
-    'Q8':   {'enc': 'oggenc',   'opts': '-q 8'},
-    'AAC':  {'enc': 'neroAacEnc',   'opts': '-br 320000'},
-    'ALAC': {'enc': 'ffmpeg',   'opts': '-i - -acodec alac'},
     'FLAC': {'enc': 'flac',     'opts': '--best'}
 }
 
@@ -110,9 +107,6 @@ def transcode(flac_file, output_dir, output_format):
     flac_decoder = 'flac -dcs -- %(FLAC)s'
 
     lame_encoder = 'lame -S %(OPTS)s - %(FILE)s'
-    ogg_encoder = 'oggenc -Q %(OPTS)s -o %(FILE)s -'
-    ffmpeg_encoder = 'ffmpeg %(OPTS)s %(FILE)s'
-    nero_encoder = 'neroAacEnc %(OPTS)s -if - -of %(FILE)s'
     flac_encoder = 'flac %(OPTS)s -o %(FILE)s -'
 
     downmix_command = 'sox -t wav - -c 2 -t wav -'
@@ -129,15 +123,6 @@ def transcode(flac_file, output_dir, output_format):
     if encoders[output_format]['enc'] == 'lame':
         transcoding_steps.append(lame_encoder)
         transcode_file += ".mp3"
-    elif encoders[output_format]['enc'] == 'oggenc':
-        transcoding_steps.append(ogg_encoder)
-        transcode_file += ".ogg"
-    elif encoders[output_format]['enc'] == 'ffmpeg':
-        transcoding_steps.append(ffmpeg_encoder)
-        transcode_file += ".alac"
-    elif encoders[output_format]['enc'] == 'neroAacEnc':
-        transcoding_steps.append(nero_encoder)
-        transcode_file += ".m4a"
     elif encoders[output_format]['enc'] == 'flac':
         transcoding_steps.append(flac_encoder)
         transcode_file += ".flac"
