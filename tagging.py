@@ -26,12 +26,37 @@
 """
 
 import os.path
+import re
+import mutagen
 import mutagen.flac
 import mutagen.mp3
 from mutagen.easyid3 import EasyID3
 
 class TaggingException(Exception):
     pass
+
+def check_tags(filename, check_tracknumber_format=True):
+    """Verify that the file has the required What.CD tags.
+
+    Returns (True, None) if OK, (False, msg) if a tag is missing or
+    invalid.
+
+    """
+    info = mutagen.File(filename, easy=True)
+    for tag in ['artist', 'album', 'title', 'tracknumber']:
+        if tag not in info.keys():
+            return (False, '"%s" has no %s tag' % (filename, tag))
+        elif info[tag] == [u'']:
+            return (False, '"%s" has an empty %s tag' % (filename, tag))
+
+    if check_tracknumber_format:
+        # Ensure 'n' or 'n/m' format.
+        tracknumber = info['tracknumber'][0]
+        valid_tracknumber = re.match(r"""\d+(/(\d+))?$""", tracknumber)
+        if not valid_tracknumber:
+            return (False, '"%s" has a malformed tracknumber tag ("%s")' % (filename, tracknumber))
+
+    return (True, None)
 
 def copy_tags(flac_file, transcode_file):
     flac_info = mutagen.flac.FLAC(flac_file)

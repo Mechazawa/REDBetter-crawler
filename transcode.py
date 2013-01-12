@@ -157,6 +157,9 @@ def transcode(flac_file, output_dir, output_format):
         raise TranscodeException('Transcode of file "%s" failed: SIGPIPE' % flac_file)
 
     tagging.copy_tags(flac_file, transcode_file)
+    (ok, msg) = tagging.check_tags(transcode_file)
+    if not ok:
+        raise TranscodeException('Tag check failed on transcoded file: %s' % msg)
 
     return transcode_file
 
