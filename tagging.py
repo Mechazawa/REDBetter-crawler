@@ -37,13 +37,13 @@ def copy_tags(flac_file, transcode_file):
     flac_info = mutagen.flac.FLAC(flac_file)
     transcode_info = None
     valid_key_fn = None
-    ext = os.path.splitext(transcode_file)[1]
+    transcode_ext = os.path.splitext(transcode_file)[1].lower()
 
-    if ext == '.flac':
+    if transcode_ext == '.flac':
         transcode_info = mutagen.flac.FLAC(transcode_file)
         valid_key_fn = lambda k: True
 
-    elif ext == '.mp3':
+    elif transcode_ext == '.mp3':
         transcode_info = mutagen.mp3.EasyMP3(transcode_file)
         valid_key_fn = lambda k: k in EasyID3.valid_keys.keys()
 
@@ -52,6 +52,38 @@ def copy_tags(flac_file, transcode_file):
 
     for tag in filter(valid_key_fn, flac_info):
         transcode_info[tag] = flac_info[tag]
+
+    if transcode_ext == '.mp3':
+        # Support for TRCK and TPOS x/y notation, which is not
+        # supported by EasyID3.
+        #
+        # These tags don't make sense as lists, so we just use the head
+        # element when fixing them up.
+        #
+        # totaltracks and totaldiscs may also appear in the FLAC file
+        # as 'tracktotal' and 'disctotal'. We support either tag, but
+        # in files with both we choose only one.
+
+        if 'tracknumber' in transcode_info.keys():
+            totaltracks = None
+            if 'totaltracks' in flac_info.keys():
+                totaltracks = flac_info['totaltracks'][0]
+            elif 'tracktotal' in flac_info.keys():
+                totaltracks = flac_info['tracktotal'][0]
+
+            if totaltracks:
+                transcode_info['tracknumber'] = [u'%s/%s' % (transcode_info['tracknumber'][0], totaltracks)]
+
+        if 'discnumber' in transcode_info.keys():
+            totaldiscs = None
+            if 'totaldiscs' in flac_info.keys():
+                totaldiscs = flac_info['totaldiscs'][0]
+            elif 'disctotal' in flac_info.keys():
+                totaldiscs = flac_info['disctotal'][0]
+
+            if totaldiscs:
+                transcode_info['discnumber'] = [u'%s/%s' % (transcode_info['discnumber'][0], totaldiscs)]
+
     transcode_info.save()
 
 # EasyID3 extensions for whatbetter.
