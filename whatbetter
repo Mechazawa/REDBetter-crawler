@@ -35,6 +35,7 @@ def main():
             default=os.path.expanduser('~/.whatbetter/config'))
     parser.add_argument('--cache', help='the location of the cache', \
             default=os.path.expanduser('~/.whatbetter/cache'))
+    parser.add_argument('-U', '--no-upload', action='store_true', help='don\'t upload new torrents (in case you want to do it manually)')
 
     args = parser.parse_args()
 
@@ -67,6 +68,8 @@ def main():
             output_dir = data_dir
         torrent_dir = os.path.expanduser(config.get('whatcd', 'torrent_dir'))
         supported_formats = [format.strip().upper() for format in config.get('whatcd', 'formats').split(',')]
+
+    upload_torrent = not args.no_upload
 
     print 'Logging in to What.CD...'
     api = whatapi.WhatAPI(username, password)
@@ -142,7 +145,8 @@ def main():
                 try:
                     transcode_dir = transcode.transcode_release(flac_dir, output_dir, format, max_threads=args.threads)
                     new_torrent = transcode.make_torrent(transcode_dir, tmpdir, api.tracker, api.passkey)
-                    api.upload(group, torrent, new_torrent, format)
+                    if upload_torrent:
+                        api.upload(group, torrent, new_torrent, format)
                     shutil.copy(new_torrent, torrent_dir)
                     print "done!"
                     if args.single: break
