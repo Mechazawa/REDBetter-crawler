@@ -226,10 +226,12 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
         # Pool.join(). c.f.,
         # http://stackoverflow.com/questions/1408356/keyboard-interrupts-with-pythons-multiprocessing-pool?rq=1
         pool = multiprocessing.Pool(max_threads)
-        result = pool.map_async(pool_transcode, [(filename, os.path.dirname(filename).replace(flac_dir, transcode_dir), output_format) for filename in flac_files])
-        result.get(60 * 60 * 12)
-        pool.close()
-        pool.join()
+        try:
+            result = pool.map_async(pool_transcode, [(filename, os.path.dirname(filename).replace(flac_dir, transcode_dir), output_format) for filename in flac_files])
+            result.get(60 * 60 * 12)
+        finally:
+            pool.terminate()
+            pool.join()
 
         # copy other files
         allowed_extensions = ['.cue', '.gif', '.jpeg', '.jpg', '.log', '.md5', '.nfo', '.pdf', '.png', '.sfv', '.txt']
