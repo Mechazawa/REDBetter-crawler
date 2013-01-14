@@ -214,6 +214,22 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
     else:
         raise TranscodeException('transcode output directory "%s" already exists' % transcode_dir)
 
+    # To ensure that a terminated pool subprocess terminates its
+    # children, we make each pool subprocess a process group leader,
+    # and handle SIGTERM by killing the process group. This will
+    # ensure there are no lingering processes when a transcode fails
+    # or is interrupted.
+    def pool_initializer():
+        os.setsid()
+        def sigterm_handler(signum, frame):
+            # We're about to SIGTERM the group, including us; ignore
+            # it so we can finish this handler.
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            pgid = os.getpgid(0)
+            os.killpg(pgid, signal.SIGTERM)
+            sys.exit(-signal.SIGTERM)
+        signal.signal(signal.SIGTERM, sigterm_handler)
+
     try:
         # create transcoding threads
         #
@@ -225,12 +241,15 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
         # with a large timeout, as a workaround for a KeyboardInterrupt in
         # Pool.join(). c.f.,
         # http://stackoverflow.com/questions/1408356/keyboard-interrupts-with-pythons-multiprocessing-pool?rq=1
-        pool = multiprocessing.Pool(max_threads)
+        pool = multiprocessing.Pool(max_threads, initializer=pool_initializer)
         try:
             result = pool.map_async(pool_transcode, [(filename, os.path.dirname(filename).replace(flac_dir, transcode_dir), output_format) for filename in flac_files])
             result.get(60 * 60 * 12)
-        finally:
+            pool.close()
+        except:
             pool.terminate()
+            raise
+        finally:
             pool.join()
 
         # copy other files
