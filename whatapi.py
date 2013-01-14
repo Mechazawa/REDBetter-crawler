@@ -39,6 +39,14 @@ formats = {
     },
 }
 
+def allowed_transcodes(torrent):
+    """Some torrent types have transcoding restrictions."""
+    preemphasis = re.search(r"""pre[- ]?emphasi(s(ed)?|zed)""", torrent['remasterTitle'], flags=re.IGNORECASE)
+    if preemphasis:
+        return []
+    else:
+        return formats.keys()
+
 class LoginException(Exception):
     pass
 

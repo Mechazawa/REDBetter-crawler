@@ -22,8 +22,10 @@ def formats_needed(group, torrent, supported_formats):
 
     others = filter(same_group, group['torrents'])
     current_formats = set((t['format'], t['encoding']) for t in others)
-    return [format for format, details in [(f, whatapi.formats[f]) for f in supported_formats]\
-            if (details['format'], details['encoding']) not in current_formats]
+    missing_formats = [format for format, details in [(f, whatapi.formats[f]) for f in supported_formats]\
+                           if (details['format'], details['encoding']) not in current_formats]
+    allowed_formats = whatapi.allowed_transcodes(torrent)
+    return [format for format in missing_formats if format in allowed_formats]
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
