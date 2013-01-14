@@ -35,6 +35,12 @@ from mutagen.easyid3 import EasyID3
 class TaggingException(Exception):
     pass
 
+def scrub_tag(value):
+    """Strip whitespace (and other common problems) from tag values.
+
+    """
+    return value.strip().strip('\x00')
+
 def check_tags(filename, check_tracknumber_format=True):
     """Verify that the file has the required What.CD tags.
 
@@ -76,8 +82,8 @@ def copy_tags(flac_file, transcode_file):
         raise TaggingException('Unsupported tag format "%s"' % transcode_file)
 
     for tag in filter(valid_key_fn, flac_info):
-        # strip the FLAC tags, just to be on the safe side.
-        transcode_info[tag] = map(lambda s: s.strip(), flac_info[tag])
+        # scrub the FLAC tags, just to be on the safe side.
+        transcode_info[tag] = map(scrub_tag, flac_info[tag])
 
     if transcode_ext == '.mp3':
         # Support for TRCK and TPOS x/y notation, which is not
@@ -93,9 +99,9 @@ def copy_tags(flac_file, transcode_file):
         if 'tracknumber' in transcode_info.keys():
             totaltracks = None
             if 'totaltracks' in flac_info.keys():
-                totaltracks = flac_info['totaltracks'][0].strip()
+                totaltracks = scrub_tag(flac_info['totaltracks'][0])
             elif 'tracktotal' in flac_info.keys():
-                totaltracks = flac_info['tracktotal'][0].strip()
+                totaltracks = scrub_tag(flac_info['tracktotal'][0])
 
             if totaltracks:
                 transcode_info['tracknumber'] = [u'%s/%s' % (transcode_info['tracknumber'][0], totaltracks)]
@@ -103,9 +109,9 @@ def copy_tags(flac_file, transcode_file):
         if 'discnumber' in transcode_info.keys():
             totaldiscs = None
             if 'totaldiscs' in flac_info.keys():
-                totaldiscs = flac_info['totaldiscs'][0].strip()
+                totaldiscs = scrub_tag(flac_info['totaldiscs'][0])
             elif 'disctotal' in flac_info.keys():
-                totaldiscs = flac_info['disctotal'][0].strip()
+                totaldiscs = scrub_tag(flac_info['disctotal'][0])
 
             if totaldiscs:
                 transcode_info['discnumber'] = [u'%s/%s' % (transcode_info['discnumber'][0], totaldiscs)]
