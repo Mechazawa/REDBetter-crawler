@@ -63,13 +63,16 @@ def run_pipeline(cmds):
     results.append((last_proc.returncode, last_stderr))
     return results
 
-def locate(root, match_function):
+def locate(root, match_function, ignore_dotfiles=True):
     '''
     Yields all filenames within the root directory for which match_function return True.
     '''
     for path, dirs, files in os.walk(root):
         for filename in (os.path.abspath(os.path.join(path, filename)) for filename in files if match_function(filename)):
-            yield filename
+            if ignore_dotfiles and os.path.basename(filename).startswith('.'):
+                pass
+            else:
+                yield filename
 
 def ext_matcher(*extensions):
     '''
