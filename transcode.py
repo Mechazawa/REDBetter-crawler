@@ -129,17 +129,15 @@ def transcode(flac_file, output_dir, output_format):
                 raise e
 
     # determine the correct transcoding process
-    flac_decoder = 'flac -dcs -- %(FLAC)s'
+    if dither:
+        flac_decoder = 'sox %(FLAC)s -b 16 -t wav - rate -v -L 44100 dither'
+    else:
+        flac_decoder = 'flac -dcs -- %(FLAC)s'
 
     lame_encoder = 'lame -S %(OPTS)s - %(FILE)s'
     flac_encoder = 'flac %(OPTS)s -o %(FILE)s -'
 
-    dither_command = 'sox -t wav - -b 16 -r 44100 -t wav -'
-
     transcoding_steps = [flac_decoder]
-
-    if dither:
-        transcoding_steps.append(dither_command)
 
     if encoders[output_format]['enc'] == 'lame':
         transcoding_steps.append(lame_encoder)
@@ -155,7 +153,7 @@ def transcode(flac_file, output_dir, output_format):
     }
 
     if output_format == 'FLAC' and dither:
-        transcode_commands = ['sox %(FLAC)s -r 44100 -b 16 %(FILE)s' % transcode_args]
+        transcode_commands = ['sox %(FLAC)s -b 16 %(FILE)s rate -v -L 44100 dither' % transcode_args]
     else:
         transcode_commands = map(lambda cmd : cmd % transcode_args, transcoding_steps)
 
