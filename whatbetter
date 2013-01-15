@@ -136,6 +136,7 @@ def main():
                 (ok, msg) = tagging.check_tags(flac_file, check_tracknumber_format=False)
                 if not ok:
                     print "A FLAC file in this release has unacceptable tags - skipping: %s" % msg
+                    print "You might be able to trump it."
                     broken_tags = True
                     break
             if broken_tags:
