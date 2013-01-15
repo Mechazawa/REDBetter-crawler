@@ -32,14 +32,47 @@ import mutagen.flac
 import mutagen.mp3
 from mutagen.easyid3 import EasyID3
 
+numeric_tags = set([
+        'tracknumber',
+        'discnumber',
+        'tracktotal',
+        'totaltracks',
+        'disctotal',
+        'totaldiscs',
+        ])
+
 class TaggingException(Exception):
     pass
 
-def scrub_tag(value):
+def valid_fractional_tag(value):
+    # m or m/n
+    if re.match(r"""\d+(/(\d+))?$""", value):
+        return True
+    else:
+        return False
+
+def scrub_tag(name, value):
     """Strip whitespace (and other common problems) from tag values.
 
+    May return the empty string ''.
     """
-    return value.strip().strip('\x00')
+    scrubbed_value = value.strip().strip('\x00')
+
+    # Strip trailing '/' or '/0' from numeric tags.
+    if name in numeric_tags:
+        scrubbed_value = re.sub(r"""/(0+)?$""", '', scrubbed_value)
+
+    # Remove leading '/' from numeric tags.
+    if name in numeric_tags:
+        scrubbed_value = scrubbed_value.lstrip('/')
+
+    # Numeric tags should not be '0' (but tracknumber 0 is OK, e.g.,
+    # hidden track).
+    if name in numeric_tags - set(['tracknumber']):
+        if re.match(r"""0+(/.*)?$""", scrubbed_value):
+            return ''
+
+    return scrubbed_value
 
 def check_tags(filename, check_tracknumber_format=True):
     """Verify that the file has the required What.CD tags.
@@ -56,10 +89,8 @@ def check_tags(filename, check_tracknumber_format=True):
             return (False, '"%s" has an empty %s tag' % (filename, tag))
 
     if check_tracknumber_format:
-        # Ensure 'n' or 'n/m' format.
         tracknumber = info['tracknumber'][0]
-        valid_tracknumber = re.match(r"""\d+(/(\d+))?$""", tracknumber)
-        if not valid_tracknumber:
+        if not valid_fractional_tag(tracknumber):
             return (False, '"%s" has a malformed tracknumber tag ("%s")' % (filename, tracknumber))
 
     return (True, None)
@@ -83,7 +114,7 @@ def copy_tags(flac_file, transcode_file):
 
     for tag in filter(valid_key_fn, flac_info):
         # scrub the FLAC tags, just to be on the safe side.
-        transcode_info[tag] = map(scrub_tag, flac_info[tag])
+        transcode_info[tag] = map(lambda v: scrub_tag(tag,v), flac_info[tag])
 
     if transcode_ext == '.mp3':
         # Support for TRCK and TPOS x/y notation, which is not
@@ -99,9 +130,9 @@ def copy_tags(flac_file, transcode_file):
         if 'tracknumber' in transcode_info.keys():
             totaltracks = None
             if 'totaltracks' in flac_info.keys():
-                totaltracks = scrub_tag(flac_info['totaltracks'][0])
+                totaltracks = scrub_tag('totaltracks', flac_info['totaltracks'][0])
             elif 'tracktotal' in flac_info.keys():
-                totaltracks = scrub_tag(flac_info['tracktotal'][0])
+                totaltracks = scrub_tag('tracktotal', flac_info['tracktotal'][0])
 
             if totaltracks:
                 transcode_info['tracknumber'] = [u'%s/%s' % (transcode_info['tracknumber'][0], totaltracks)]
@@ -109,9 +140,9 @@ def copy_tags(flac_file, transcode_file):
         if 'discnumber' in transcode_info.keys():
             totaldiscs = None
             if 'totaldiscs' in flac_info.keys():
-                totaldiscs = scrub_tag(flac_info['totaldiscs'][0])
+                totaldiscs = scrub_tag('totaldiscs', flac_info['totaldiscs'][0])
             elif 'disctotal' in flac_info.keys():
-                totaldiscs = scrub_tag(flac_info['disctotal'][0])
+                totaldiscs = scrub_tag('disctotal', flac_info['disctotal'][0])
 
             if totaldiscs:
                 transcode_info['discnumber'] = [u'%s/%s' % (transcode_info['discnumber'][0], totaldiscs)]
