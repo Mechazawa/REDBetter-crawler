@@ -13,7 +13,7 @@ setup(
     version = '1.0',
     url = 'http://github.com/zacharydenton/whatbetter',
     py_modules = [
-        'mediafile',
+        'tagging',
         'transcode',
         'whatapi'
     ],
