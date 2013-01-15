@@ -12,6 +12,7 @@ from multiprocessing import cpu_count
 import whatapi
 import transcode
 import tagging
+from _version import __version__
 
 def formats_needed(group, torrent, supported_formats):
     same_group = lambda t: t['media'] == torrent['media'] and\
@@ -28,7 +29,7 @@ def formats_needed(group, torrent, supported_formats):
     return [format for format in missing_formats if format in allowed_formats]
 
 def main():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, prog='whatbetter')
     parser.add_argument('release_urls', nargs='*', help='the URL where the release is located')
     parser.add_argument('-s', '--single', action='store_true', help='only add one format per release (useful for getting unique groups)')
     parser.add_argument('-j', '--threads', type=int, help='number of threads to use when transcoding',
@@ -38,6 +39,7 @@ def main():
     parser.add_argument('--cache', help='the location of the cache', \
             default=os.path.expanduser('~/.whatbetter/cache'))
     parser.add_argument('-U', '--no-upload', action='store_true', help='don\'t upload new torrents (in case you want to do it manually)')
+    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 
     args = parser.parse_args()
 
