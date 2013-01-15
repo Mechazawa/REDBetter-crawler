@@ -122,7 +122,11 @@ def main():
         except Exception as e:
             print "Error: %s - skipping" % e
             continue
-    
+
+        if transcode.is_multichannel(flac_dir):
+            print "This is a multichannel release, which is unsupported - skipping"
+            continue
+
         needed = formats_needed(group, torrent, supported_formats)
         print "Formats needed: %s" % ', '.join(needed)
 

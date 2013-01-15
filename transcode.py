@@ -24,6 +24,9 @@ encoders = {
 class TranscodeException(Exception):
     pass
 
+class TranscodeDownmixException(TranscodeException):
+    pass
+
 # In most Unix shells, pipelines only report the return code of the
 # last process. We need to know if any process in the transcode
 # pipeline fails, not just the last one.
@@ -88,6 +91,13 @@ def is_24bit(flac_dir):
     flacs = (mutagen.flac.FLAC(flac_file) for flac_file in locate(flac_dir, ext_matcher('.flac')))
     return any(flac.info.bits_per_sample > 16 for flac in flacs)
 
+def is_multichannel(flac_dir):
+    '''
+    Returns True if any FLAC within flac_dir is multichannel.
+    '''
+    flacs = (mutagen.flac.FLAC(flac_file) for flac_file in locate(flac_dir, ext_matcher('.flac')))
+    return any(flac.info.channels > 2 for flac in flacs)
+
 # Pool.map() can't pickle lambdas, so we need a helper function.
 def pool_transcode((flac_file, output_dir, output_format)):
     return transcode(flac_file, output_dir, output_format)
@@ -100,8 +110,10 @@ def transcode(flac_file, output_dir, output_format):
     flac_info = mutagen.flac.FLAC(flac_file)
     sample_rate = flac_info.info.sample_rate
     bits_per_sample = flac_info.info.bits_per_sample
-    channels = flac_info.info.channels
     dither = sample_rate > 48000 or bits_per_sample > 16
+
+    if flac_info.info.channels > 2:
+        raise TranscodeDownmixException('FLAC file "%s" has more than 2 channels, unsupported' % flac_file)
 
     # determine the new filename
     transcode_file = os.path.join(output_dir, os.path.splitext(os.path.basename(flac_file))[0])
@@ -122,13 +134,9 @@ def transcode(flac_file, output_dir, output_format):
     lame_encoder = 'lame -S %(OPTS)s - %(FILE)s'
     flac_encoder = 'flac %(OPTS)s -o %(FILE)s -'
 
-    downmix_command = 'sox -t wav - -c 2 -t wav -'
     dither_command = 'sox -t wav - -b 16 -r 44100 -t wav -'
 
     transcoding_steps = [flac_decoder]
-
-    if channels > 2:
-        transcoding_steps.append(downmix_command)
 
     if dither:
         transcoding_steps.append(dither_command)
