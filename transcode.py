@@ -15,7 +15,7 @@ import mutagen.flac
 import tagging
 
 encoders = {
-    '320':  {'enc': 'lame',     'opts': '-b 320 --ignore-tag-errors'},
+    '320':  {'enc': 'lame',     'opts': '-h -b 320 --ignore-tag-errors'},
     'V0':   {'enc': 'lame',     'opts': '-V 0 --vbr-new --ignore-tag-errors'},
     'V2':   {'enc': 'lame',     'opts': '-V 2 --vbr-new --ignore-tag-errors'},
     'FLAC': {'enc': 'flac',     'opts': '--best'}
