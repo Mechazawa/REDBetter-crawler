@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import errno
 import re
 import sys
 import pipes
@@ -105,7 +106,15 @@ def transcode(flac_file, output_dir, output_format):
     # determine the new filename
     transcode_file = os.path.join(output_dir, os.path.splitext(os.path.basename(flac_file))[0])
     if not os.path.exists(os.path.dirname(transcode_file)):
-        os.makedirs(os.path.dirname(transcode_file))
+        try:
+            os.makedirs(os.path.dirname(transcode_file))
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                # Harmless race condition -- another transcode process
+                # beat us here.
+                pass
+            else:
+                raise e
 
     # determine the correct transcoding process
     flac_decoder = 'flac -dcs -- %(FLAC)s'
