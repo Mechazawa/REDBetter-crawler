@@ -163,5 +163,8 @@ class WhatAPI:
         _, data, headers = form.click_request_data()
         return self.session.post(url, data=data, headers=dict(headers))
 
+    def release_url(self, group, torrent):
+        return "https://what.cd/torrents.php?id=%s&torrentid=%s#torrent%s" % (group['group']['id'], torrent['id'], torrent['id'])
+
 def unescape(text):
     return HTMLParser.HTMLParser().unescape(text)

@@ -95,6 +95,7 @@ def main():
 
         print
         print "Release found: %s (%s)" % (whatapi.unescape(group['group']['name']), group['group']['year'])
+        print "Release URL: %s" % api.release_url(group, torrent)
         
         if not torrent['filePath']:
             flac_file = os.path.join(data_dir, whatapi.unescape(torrent['fileList']).split('{{{')[0])
