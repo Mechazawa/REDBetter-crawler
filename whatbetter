@@ -39,6 +39,7 @@ def main():
     parser.add_argument('--cache', help='the location of the cache', \
             default=os.path.expanduser('~/.whatbetter/cache'))
     parser.add_argument('-U', '--no-upload', action='store_true', help='don\'t upload new torrents (in case you want to do it manually)')
+    parser.add_argument('-E', '--no-24bit-edit', action='store_true', help='don\'t try to edit 24-bit torrents mistakenly labeled as 16-bit')
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 
     args = parser.parse_args()
@@ -117,12 +118,15 @@ def main():
                 # that they're actually 24 bit files (usually 24/44.1). Since we know for
                 # sure whether the files are 24 bit, we might as well correct the listing
                 # on the site (and get an extra upload in the process).
+                if args.no_24bit_edit:
+                    print "Release is actually 24-bit lossless, skipping."
+                    continue
                 print "Marking release as 24bit lossless."
                 api.set_24bit(torrent)
                 group = api.request('torrentgroup', id=groupid)
                 torrent = [t for t in group['torrents'] if t['id'] == torrentid][0]
         except Exception as e:
-            print "Error: %s - skipping" % e
+            print "Error: can't edit 24-bit torrent - skipping: %s" % e
             continue
 
         if transcode.is_multichannel(flac_dir):
