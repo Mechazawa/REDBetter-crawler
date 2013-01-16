@@ -12,6 +12,25 @@ from multiprocessing import cpu_count
 import whatapi
 import transcode
 import tagging
+from _version import __version__
+
+def banner():
+    return 'Created with [url=http://github.com/zacharydenton/whatbetter]whatbetter[/url] version %s.' % __version__
+
+def create_description(torrent, flac_dir, format, permalink):
+    # Create an example command to document the transcode process.
+    cmds = transcode.transcode_commands(format, transcode.needs_dithering(flac_dir), 'input.flac', 'output' + transcode.encoders[format]['ext'])
+
+    description = [
+        'Transcode of [url=%s]%s[/url]' % (permalink, permalink),
+        '',
+        'Transcode process:',
+        '',
+        '[code]%s[/code]' % ' | '.join(cmds),
+        '',
+        banner()
+        ]
+    return description
 
 def formats_needed(group, torrent, supported_formats):
     same_group = lambda t: t['media'] == torrent['media'] and\
@@ -28,7 +47,7 @@ def formats_needed(group, torrent, supported_formats):
     return [format for format in missing_formats if format in allowed_formats]
 
 def main():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, prog='whatbetter')
     parser.add_argument('release_urls', nargs='*', help='the URL where the release is located')
     parser.add_argument('-s', '--single', action='store_true', help='only add one format per release (useful for getting unique groups)')
     parser.add_argument('-j', '--threads', type=int, help='number of threads to use when transcoding',
@@ -38,6 +57,8 @@ def main():
     parser.add_argument('--cache', help='the location of the cache', \
             default=os.path.expanduser('~/.whatbetter/cache'))
     parser.add_argument('-U', '--no-upload', action='store_true', help='don\'t upload new torrents (in case you want to do it manually)')
+    parser.add_argument('-E', '--no-24bit-edit', action='store_true', help='don\'t try to edit 24-bit torrents mistakenly labeled as 16-bit')
+    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 
     args = parser.parse_args()
 
@@ -95,6 +116,7 @@ def main():
 
         print
         print "Release found: %s (%s)" % (whatapi.unescape(group['group']['name']), group['group']['year'])
+        print "Release URL: %s" % api.release_url(group, torrent)
         
         if not torrent['filePath']:
             flac_file = os.path.join(data_dir, whatapi.unescape(torrent['fileList']).split('{{{')[0])
@@ -114,14 +136,21 @@ def main():
                 # that they're actually 24 bit files (usually 24/44.1). Since we know for
                 # sure whether the files are 24 bit, we might as well correct the listing
                 # on the site (and get an extra upload in the process).
+                if args.no_24bit_edit:
+                    print "Release is actually 24-bit lossless, skipping."
+                    continue
                 print "Marking release as 24bit lossless."
                 api.set_24bit(torrent)
                 group = api.request('torrentgroup', id=groupid)
                 torrent = [t for t in group['torrents'] if t['id'] == torrentid][0]
         except Exception as e:
-            print "Error: %s - skipping" % e
+            print "Error: can't edit 24-bit torrent - skipping: %s" % e
             continue
-    
+
+        if transcode.is_multichannel(flac_dir):
+            print "This is a multichannel release, which is unsupported - skipping"
+            continue
+
         needed = formats_needed(group, torrent, supported_formats)
         print "Formats needed: %s" % ', '.join(needed)
 
@@ -135,6 +164,7 @@ def main():
                 (ok, msg) = tagging.check_tags(flac_file, check_tracknumber_format=False)
                 if not ok:
                     print "A FLAC file in this release has unacceptable tags - skipping: %s" % msg
+                    print "You might be able to trump it."
                     broken_tags = True
                     break
             if broken_tags:
@@ -148,7 +178,9 @@ def main():
                     transcode_dir = transcode.transcode_release(flac_dir, output_dir, format, max_threads=args.threads)
                     new_torrent = transcode.make_torrent(transcode_dir, tmpdir, api.tracker, api.passkey)
                     if upload_torrent:
-                        api.upload(group, torrent, new_torrent, format)
+                        permalink = api.permalink(torrent)
+                        description = create_description(torrent, flac_dir, format, permalink)
+                        api.upload(group, torrent, new_torrent, format, description)
                     shutil.copy(new_torrent, torrent_dir)
                     print "done!"
                     if args.single: break
