@@ -134,7 +134,7 @@ class WhatAPI:
             done = 'Next &gt;' not in content
             page += 1
 
-    def upload(self, group, torrent, new_torrent, format):
+    def upload(self, group, torrent, new_torrent, format, description=[]):
         url = "https://what.cd/upload.php?groupid=%s" % group['group']['id']
         response = self.session.get(url)
         forms = mechanize.ParseFile(StringIO(response.text.encode('utf-8')), url)
@@ -150,7 +150,11 @@ class WhatAPI:
         form.find_control('format').set('1', formats[format]['format'])
         form.find_control('bitrate').set('1', formats[format]['encoding'])
         form.find_control('media').set('1', torrent['media'])
-        form['release_desc'] = 'Created with [url=http://github.com/zacharydenton/whatbetter]whatbetter[/url].'
+
+        release_desc = '\n'.join(description)
+        if release_desc:
+            form['release_desc'] = release_desc
+
         _, data, headers = form.click_request_data()
         return self.session.post(url, data=data, headers=dict(headers))
 
@@ -165,6 +169,9 @@ class WhatAPI:
 
     def release_url(self, group, torrent):
         return "https://what.cd/torrents.php?id=%s&torrentid=%s#torrent%s" % (group['group']['id'], torrent['id'], torrent['id'])
+
+    def permalink(self, torrent):
+        return "https://what.cd/torrents.php?torrentid=%s" % torrent['id']
 
 def unescape(text):
     return HTMLParser.HTMLParser().unescape(text)

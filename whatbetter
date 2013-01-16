@@ -14,6 +14,24 @@ import transcode
 import tagging
 from _version import __version__
 
+def banner():
+    return 'Created with [url=http://github.com/zacharydenton/whatbetter]whatbetter[/url] version %s.' % __version__
+
+def create_description(torrent, flac_dir, format, permalink):
+    # Create an example command to document the transcode process.
+    cmds = transcode.transcode_commands(format, transcode.needs_dithering(flac_dir), 'input.flac', 'output' + transcode.encoders[format]['ext'])
+
+    description = [
+        'Transcode of [url=%s]%s[/url]' % (permalink, permalink),
+        '',
+        'Transcode process:',
+        '',
+        '[code]%s[/code]' % ' | '.join(cmds),
+        '',
+        banner()
+        ]
+    return description
+
 def formats_needed(group, torrent, supported_formats):
     same_group = lambda t: t['media'] == torrent['media'] and\
                            t['remasterYear'] == torrent['remasterYear'] and\
@@ -160,7 +178,9 @@ def main():
                     transcode_dir = transcode.transcode_release(flac_dir, output_dir, format, max_threads=args.threads)
                     new_torrent = transcode.make_torrent(transcode_dir, tmpdir, api.tracker, api.passkey)
                     if upload_torrent:
-                        api.upload(group, torrent, new_torrent, format)
+                        permalink = api.permalink(torrent)
+                        description = create_description(torrent, flac_dir, format, permalink)
+                        api.upload(group, torrent, new_torrent, format, description)
                     shutil.copy(new_torrent, torrent_dir)
                     print "done!"
                     if args.single: break

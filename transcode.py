@@ -15,10 +15,10 @@ import mutagen.flac
 import tagging
 
 encoders = {
-    '320':  {'enc': 'lame',     'opts': '-h -b 320 --ignore-tag-errors'},
-    'V0':   {'enc': 'lame',     'opts': '-V 0 --vbr-new --ignore-tag-errors'},
-    'V2':   {'enc': 'lame',     'opts': '-V 2 --vbr-new --ignore-tag-errors'},
-    'FLAC': {'enc': 'flac',     'opts': '--best'}
+    '320':  {'enc': 'lame', 'ext': '.mp3',  'opts': '-h -b 320 --ignore-tag-errors'},
+    'V0':   {'enc': 'lame', 'ext': '.mp3',  'opts': '-V 0 --vbr-new --ignore-tag-errors'},
+    'V2':   {'enc': 'lame', 'ext': '.mp3',  'opts': '-V 2 --vbr-new --ignore-tag-errors'},
+    'FLAC': {'enc': 'flac', 'ext': '.flac', 'opts': '--best'}
 }
 
 class TranscodeException(Exception):
@@ -98,6 +98,48 @@ def is_multichannel(flac_dir):
     flacs = (mutagen.flac.FLAC(flac_file) for flac_file in locate(flac_dir, ext_matcher('.flac')))
     return any(flac.info.channels > 2 for flac in flacs)
 
+def needs_dithering(flac_dir):
+    '''
+    Returns True if any FLAC within flac_dir needs dithering when
+    transcoded.
+    '''
+    return is_24bit(flac_dir)
+
+def transcode_commands(output_format, dither, flac_file, transcode_file):
+    '''
+    Return a list of transcode steps (one command per list element),
+    which can be used to create a transcode pipeline for flac_file ->
+    transcode_file using the specified output_format, plus any
+    dithering, if needed.
+    '''
+    if dither:
+        flac_decoder = 'sox %(FLAC)s -b 16 -t wav - rate -v -L 44100 dither'
+    else:
+        flac_decoder = 'flac -dcs -- %(FLAC)s'
+
+    lame_encoder = 'lame -S %(OPTS)s - %(FILE)s'
+    flac_encoder = 'flac %(OPTS)s -o %(FILE)s -'
+
+    transcoding_steps = [flac_decoder]
+
+    if encoders[output_format]['enc'] == 'lame':
+        transcoding_steps.append(lame_encoder)
+    elif encoders[output_format]['enc'] == 'flac':
+        transcoding_steps.append(flac_encoder)
+
+    transcode_args = {
+        'FLAC' : pipes.quote(flac_file.encode(sys.getfilesystemencoding())),
+        'FILE' : pipes.quote(transcode_file.encode(sys.getfilesystemencoding())),
+        'OPTS' : encoders[output_format]['opts']
+        }
+
+    if output_format == 'FLAC' and dither:
+        commands = ['sox %(FLAC)s -b 16 %(FILE)s rate -v -L 44100 dither' % transcode_args]
+    else:
+        commands = map(lambda cmd : cmd % transcode_args, transcoding_steps)
+
+    return commands
+
 # Pool.map() can't pickle lambdas, so we need a helper function.
 def pool_transcode((flac_file, output_dir, output_format)):
     return transcode(flac_file, output_dir, output_format)
@@ -117,6 +159,8 @@ def transcode(flac_file, output_dir, output_format):
 
     # determine the new filename
     transcode_file = os.path.join(output_dir, os.path.splitext(os.path.basename(flac_file))[0])
+    transcode_file += encoders[output_format]['ext']
+
     if not os.path.exists(os.path.dirname(transcode_file)):
         try:
             os.makedirs(os.path.dirname(transcode_file))
@@ -128,43 +172,15 @@ def transcode(flac_file, output_dir, output_format):
             else:
                 raise e
 
-    # determine the correct transcoding process
-    if dither:
-        flac_decoder = 'sox %(FLAC)s -b 16 -t wav - rate -v -L 44100 dither'
-    else:
-        flac_decoder = 'flac -dcs -- %(FLAC)s'
-
-    lame_encoder = 'lame -S %(OPTS)s - %(FILE)s'
-    flac_encoder = 'flac %(OPTS)s -o %(FILE)s -'
-
-    transcoding_steps = [flac_decoder]
-
-    if encoders[output_format]['enc'] == 'lame':
-        transcoding_steps.append(lame_encoder)
-        transcode_file += ".mp3"
-    elif encoders[output_format]['enc'] == 'flac':
-        transcoding_steps.append(flac_encoder)
-        transcode_file += ".flac"
-
-    transcode_args = {
-        'FLAC' : pipes.quote(flac_file.encode(sys.getfilesystemencoding())),
-        'FILE' : pipes.quote(transcode_file.encode(sys.getfilesystemencoding())),
-        'OPTS' : encoders[output_format]['opts']
-    }
-
-    if output_format == 'FLAC' and dither:
-        transcode_commands = ['sox %(FLAC)s -b 16 %(FILE)s rate -v -L 44100 dither' % transcode_args]
-    else:
-        transcode_commands = map(lambda cmd : cmd % transcode_args, transcoding_steps)
-
-    results = run_pipeline(transcode_commands)
+    commands = transcode_commands(output_format, dither, flac_file, transcode_file)
+    results = run_pipeline(commands)
 
     # Check for problems. Because it's a pipeline, the earliest one is
     # usually the source. The exception is -SIGPIPE, which is caused
     # by "backpressure" due to a later command failing: ignore those
     # unless no other problem is found.
     last_sigpipe = None
-    for (cmd, (code, stderr)) in zip(transcode_commands, results):
+    for (cmd, (code, stderr)) in zip(commands, results):
         if code:
             if code == -signal.SIGPIPE:
                 last_sigpipe = (cmd, (code, stderr))
@@ -210,7 +226,7 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
     flac_files = locate(flac_dir, ext_matcher('.flac'))
 
     # check if we need to dither to 16/44
-    dither = is_24bit(flac_dir)
+    dither = needs_dithering(flac_dir)
 
     # check if we need to encode
     if output_format == 'FLAC' and not dither:
