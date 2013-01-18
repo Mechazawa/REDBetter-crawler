@@ -76,6 +76,7 @@ def main():
         config.set('whatcd', 'output_dir', '')
         config.set('whatcd', 'torrent_dir', '')
         config.set('whatcd', 'formats', 'flac, v0, 320, v2')
+        config.set('whatcd', 'media', ', '.join(whatapi.lossless_media))
         config.write(open(args.config, 'w'))
         print 'Please edit the configuration file: %s' % args.config
         sys.exit(2)
@@ -92,6 +93,19 @@ def main():
         torrent_dir = os.path.expanduser(config.get('whatcd', 'torrent_dir'))
         supported_formats = [format.strip().upper() for format in config.get('whatcd', 'formats').split(',')]
 
+        try:
+            media_config = config.get('whatcd', 'media')
+            if not media_config:
+                supported_media = whatapi.lossless_media
+            else:
+                supported_media = set([medium.strip().lower() for medium in media_config.split(',')])
+                if not supported_media.issubset(set(whatapi.lossless_media)):
+                    print 'Unsupported media type "%s", edit your configuration' % (supported_media - whatapi.lossless_media).pop()
+                    print 'Supported types are:', ', '.join(whatapi.lossless_media)
+                    sys.exit(2)
+        except ConfigParser.NoOptionError:
+            supported_media = whatapi.lossless_media
+
     upload_torrent = not args.no_upload
 
     print 'Logging in to What.CD...'
@@ -105,10 +119,11 @@ def main():
 
     print 'Searching for transcode candidates...'
     if args.release_urls:
+        print 'You supplied one or more release URLs, ignoring your configuration\'s media types.'
         candidates = [(int(query['id']), int(query['torrentid'])) for query in\
                 [dict(urlparse.parse_qsl(urlparse.urlparse(url).query)) for url in args.release_urls]]
     else:
-        candidates = api.snatched(skip=seen)
+        candidates = api.snatched(skip=seen, media=supported_media)
 
     for groupid, torrentid in candidates:
         group = api.request('torrentgroup', id=groupid)
@@ -117,7 +132,7 @@ def main():
         print
         print "Release found: %s (%s)" % (whatapi.unescape(group['group']['name']), group['group']['year'])
         print "Release URL: %s" % api.release_url(group, torrent)
-        
+
         if not torrent['filePath']:
             flac_file = os.path.join(data_dir, whatapi.unescape(torrent['fileList']).split('{{{')[0])
             if not os.path.exists(flac_file):
