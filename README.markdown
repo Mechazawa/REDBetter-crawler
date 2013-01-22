@@ -59,6 +59,7 @@ like this:
     output_dir =
     torrent_dir =
     formats = flac, v0, 320, v2
+    media = sacd, soundboard, web, dvd, cd, dat, vinyl, blu-ray
 
 `username` and `password` are your What.CD login credentials. 
 `data_dir` is the directory where your downloads are stored. 
@@ -68,6 +69,10 @@ the value is blank, `data_dir` will be used.
 your watch directory). `formats` is a list of formats that you'd like to
 support (so if you don't want to upload V2, just remove it from this
 list).
+`media` is a list of lossless media types you want to consider for
+transcoding. The default value is all What.CD lossless formats, but if
+you want to transcode only CD and vinyl media, for example, you would
+set this to 'cd, vinyl'
 
 You should end up with something like this:
 
@@ -78,6 +83,7 @@ You should end up with something like this:
     output_dir =
     torrent_dir = /srv/torrents
     formats = flac, v0, 320
+    media = cd, vinyl, web
 
 Alright! Now you're ready to use whatbetter.
 
@@ -110,3 +116,8 @@ To transcode and upload a specific release (provided you have already
 downloaded the FLAC and it is located in your `data_dir`):
 
     $ whatbetter http://what.cd/torrents.php?id=1000&torrentid=1000000
+
+Note that if you specify a particular release(s), whatbetter will
+ignore your configuration's media types and attempt to transcode the
+releases you have specified regardless of their media type (so long as
+they are lossless types).

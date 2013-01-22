@@ -20,6 +20,20 @@ headers = {
     'Accept-Language': 'en-US,en;q=0.8',
     'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3'}
 
+# gazelle is picky about case in searches with &media=x
+media_search_map = {
+    'cd': 'CD',
+    'dvd': 'DVD',
+    'vinyl': 'Vinyl',
+    'soundboard': 'Soundboard',
+    'sacd': 'SACD',
+    'dat': 'DAT',
+    'web': 'WEB',
+    'blu-ray': 'Blu-ray'
+    }
+
+lossless_media = set([m for m in media_search_map.keys()])
+
 formats = {
     'FLAC': {
         'format': 'FLAC',
@@ -124,18 +138,32 @@ class WhatAPI:
         res['torrentgroup'] = keep_releases
         return res
 
-    def snatched(self, skip=None):
-        page = 1
-        done = False
+    def snatched(self, skip=None, media=lossless_media):
+        if not media.issubset(lossless_media):
+            raise ValueError('Unsupported media type %s' % (media - lossless_media).pop())
+
+        # gazelle doesn't currently support multiple values per query
+        # parameter, so we have to search a media type at a time;
+        # unless it's all types, in which case we simply don't specify
+        # a 'media' parameter (defaults to all types).
+
+        if media == lossless_media:
+            media_params = ['']
+        else:
+            media_params = ['&media=%s' % media_search_map[m] for m in media]
+
         url = 'https://what.cd/torrents.php?type=snatched&userid=%s&format=FLAC' % self.userid
-        pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)')
-        while not done:
-            content = self.session.get(url + "&page=%s" % page).text
-            for groupid, torrentid in pattern.findall(content):
-                if skip is None or torrentid not in skip:
-                    yield int(groupid), int(torrentid)
-            done = 'Next &gt;' not in content
-            page += 1
+        for mp in media_params:
+            page = 1
+            done = False
+            pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)')
+            while not done:
+                content = self.session.get(url + mp + "&page=%s" % page).text
+                for groupid, torrentid in pattern.findall(content):
+                    if skip is None or torrentid not in skip:
+                        yield int(groupid), int(torrentid)
+                done = 'Next &gt;' not in content
+                page += 1
 
     def upload(self, group, torrent, new_torrent, format, description=[]):
         url = "https://what.cd/upload.php?groupid=%s" % group['group']['id']
