@@ -163,5 +163,7 @@ def main():
         seen.add(str(torrentid))
         pickle.dump(seen, open(args.cache, 'wb'))
 
+    api.logout()
+
 if __name__ == "__main__":
     main()

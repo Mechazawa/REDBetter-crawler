@@ -79,6 +79,9 @@ class WhatAPI:
         self.passkey = accountinfo['passkey']
         self.userid = accountinfo['id']
 
+    def logout(self):
+        self.session.get("https://what.cd/logout.php?auth=%s" % self.authkey)
+
     def request(self, action, **kwargs):
         '''Makes an AJAX request at a given action page'''
         while time.time() - self.last_request < self.rate_limit:
