@@ -69,7 +69,8 @@ class RequestException(Exception):
 
 class WhatAPI:
     def __init__(self, username=None, password=None):
-        self.session = requests.session(headers=headers)
+        self.session = requests.Session()
+        self.session.headers.update(headers)
         self.username = username
         self.password = password
         self.authkey = None
