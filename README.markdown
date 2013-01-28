@@ -115,7 +115,7 @@ take a while):
 To transcode and upload a specific release (provided you have already
 downloaded the FLAC and it is located in your `data_dir`):
 
-    $ whatbetter http://what.cd/torrents.php?id=1000&torrentid=1000000
+    $ whatbetter http://what.cd/torrents.php?id=1000\&torrentid=1000000
 
 Note that if you specify a particular release(s), whatbetter will
 ignore your configuration's media types and attempt to transcode the
