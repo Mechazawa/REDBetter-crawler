@@ -114,7 +114,9 @@ def copy_tags(flac_file, transcode_file):
 
     for tag in filter(valid_key_fn, flac_info):
         # scrub the FLAC tags, just to be on the safe side.
-        transcode_info[tag] = map(lambda v: scrub_tag(tag,v), flac_info[tag])
+        values = map(lambda v: scrub_tag(tag,v), flac_info[tag])
+        if values and values != [u'']:
+            transcode_info[tag] = values
 
     if transcode_ext == '.mp3':
         # Support for TRCK and TPOS x/y notation, which is not
