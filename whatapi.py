@@ -78,7 +78,7 @@ class WhatAPI:
         self.userid = None
         self.tracker = "http://tracker.what.cd:34000/"
         self.last_request = time.time()
-        self.rate_limit = 1.0 # seconds between requests
+        self.rate_limit = 2.0 # seconds between requests
         self._login()
 
     def _login(self):
