@@ -27,6 +27,9 @@ class TranscodeException(Exception):
 class TranscodeDownmixException(TranscodeException):
     pass
 
+class UnknownSampleRateException(TranscodeException):
+    pass
+    
 # In most Unix shells, pipelines only report the return code of the
 # last process. We need to know if any process in the transcode
 # pipeline fails, not just the last one.
@@ -98,22 +101,22 @@ def is_multichannel(flac_dir):
     flacs = (mutagen.flac.FLAC(flac_file) for flac_file in locate(flac_dir, ext_matcher('.flac')))
     return any(flac.info.channels > 2 for flac in flacs)
 
-def needs_dithering(flac_dir):
+def needs_resampleing(flac_dir):
     '''
-    Returns True if any FLAC within flac_dir needs dithering when
+    Returns True if any FLAC within flac_dir needs resampleing when
     transcoded.
     '''
     return is_24bit(flac_dir)
 
-def transcode_commands(output_format, dither, flac_file, transcode_file):
+def transcode_commands(output_format, resample,needed_sample_rate,flac_file, transcode_file):
     '''
     Return a list of transcode steps (one command per list element),
     which can be used to create a transcode pipeline for flac_file ->
     transcode_file using the specified output_format, plus any
-    dithering, if needed.
+    resampleing, if needed.
     '''
-    if dither:
-        flac_decoder = 'sox %(FLAC)s -b 16 -t wav - rate -v -L 44100 dither'
+    if resample:
+        flac_decoder = 'sox %(FLAC)s -G -b 16 -t wav - rate -v -L %(SAMPLERATE)s resample'
     else:
         flac_decoder = 'flac -dcs -- %(FLAC)s'
 
@@ -130,14 +133,14 @@ def transcode_commands(output_format, dither, flac_file, transcode_file):
     transcode_args = {
         'FLAC' : pipes.quote(flac_file.encode(sys.getfilesystemencoding())),
         'FILE' : pipes.quote(transcode_file.encode(sys.getfilesystemencoding())),
-        'OPTS' : encoders[output_format]['opts']
+        'OPTS' : encoders[output_format]['opts'],
+        'SAMPLERATE' : needed_sample_rate,
         }
 
-    if output_format == 'FLAC' and dither:
-        commands = ['sox %(FLAC)s -b 16 %(FILE)s rate -v -L 44100 dither' % transcode_args]
+    if output_format == 'FLAC' and resample:
+        commands = ['sox %(FLAC)s -G -b 16 %(FILE)s rate -v -L %(SAMPLERATE)s dither' % transcode_args]
     else:
         commands = map(lambda cmd : cmd % transcode_args, transcoding_steps)
-
     return commands
 
 # Pool.map() can't pickle lambdas, so we need a helper function.
@@ -152,7 +155,20 @@ def transcode(flac_file, output_dir, output_format):
     flac_info = mutagen.flac.FLAC(flac_file)
     sample_rate = flac_info.info.sample_rate
     bits_per_sample = flac_info.info.bits_per_sample
-    dither = sample_rate > 48000 or bits_per_sample > 16
+    resample = sample_rate > 48000 or bits_per_sample > 16
+
+    #If resampling isn't needed then needed_sample_rate will not be used.
+    needed_sample_rate=None
+    
+    if resample:
+        if (sample_rate == 88200) or (sample_rate == 176400):
+            needed_sample_rate = '44100'
+        elif sample_rate == 96000:
+            needed_sample_rate = '48000'
+        else:
+            raise UnknownSampleRateException('FLAC file "{0}" has a sample rate {1}, which is not 88.2 , 176.4 or 96kHz but needs resampling, this is unsupported'.format(flac_file,sample_rate))
+
+          
 
     if flac_info.info.channels > 2:
         raise TranscodeDownmixException('FLAC file "%s" has more than 2 channels, unsupported' % flac_file)
@@ -172,7 +188,7 @@ def transcode(flac_file, output_dir, output_format):
             else:
                 raise e
 
-    commands = transcode_commands(output_format, dither, flac_file, transcode_file)
+    commands = transcode_commands(output_format, resample, needed_sample_rate, flac_file, transcode_file)
     results = run_pipeline(commands)
 
     # Check for problems. Because it's a pipeline, the earliest one is
@@ -197,7 +213,7 @@ def transcode(flac_file, output_dir, output_format):
 
     return transcode_file
 
-def get_transcode_dir(flac_dir, output_dir, output_format, dither):
+def get_transcode_dir(flac_dir, output_dir, output_format, resample):
     transcode_dir = os.path.basename(flac_dir)
 
     if 'FLAC' in flac_dir.upper():
@@ -206,7 +222,7 @@ def get_transcode_dir(flac_dir, output_dir, output_format, dither):
         transcode_dir = transcode_dir + " (" + output_format + ")"
         if output_format != 'FLAC':
             transcode_dir = re.sub(re.compile('FLAC', re.I), '', transcode_dir)
-    if dither:
+    if resample:
         if '24' in flac_dir and '96' in flac_dir:
             # XXX: theoretically, this could replace part of the album title too.
             # e.g. "24 days in 96 castles - [24-96]" would become "16 days in 44 castles - [16-44]"
@@ -225,11 +241,11 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
     output_dir = os.path.abspath(output_dir)
     flac_files = locate(flac_dir, ext_matcher('.flac'))
 
-    # check if we need to dither to 16/44
-    dither = needs_dithering(flac_dir)
+    # check if we need to resample to 16/44
+    resample = needs_resampleing(flac_dir)
 
     # check if we need to encode
-    if output_format == 'FLAC' and not dither:
+    if output_format == 'FLAC' and not resample:
         # XXX: if output_dir is not the same as flac_dir, this may not
         # do what the user expects.
         if output_dir != os.path.dirname(flac_dir):
@@ -242,7 +258,7 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
     # transcode_dir is a new directory created exclusively for this
     # transcode. Do not change this assumption without considering the
     # consequences!
-    transcode_dir = get_transcode_dir(flac_dir, output_dir, output_format, dither)
+    transcode_dir = get_transcode_dir(flac_dir, output_dir, output_format, resample)
     if not os.path.exists(transcode_dir):
         os.makedirs(transcode_dir)
     else:
