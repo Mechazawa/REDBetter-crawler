@@ -116,7 +116,7 @@ def transcode_commands(output_format, resample,needed_sample_rate,flac_file, tra
     resampleing, if needed.
     '''
     if resample:
-        flac_decoder = 'sox %(FLAC)s -G -b 16 -t wav - rate -v -L %(SAMPLERATE)s resample'
+        flac_decoder = 'sox %(FLAC)s -G -b 16 -t wav - rate -v -L %(SAMPLERATE)s dither'
     else:
         flac_decoder = 'flac -dcs -- %(FLAC)s'
 
