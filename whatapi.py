@@ -32,7 +32,7 @@ media_search_map = {
     'blu-ray': 'Blu-ray'
     }
 
-lossless_media = set([m for m in media_search_map.keys()])
+lossless_media = set(media_search_map.keys())
 
 formats = {
     'FLAC': {

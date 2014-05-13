@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 import os
-import errno
 import re
 import sys
+import errno
 import pipes
+import shlex
 import shutil
+import signal
 import fnmatch
 import tempfile
 import subprocess
 import multiprocessing
-import shlex
-import signal
 import mutagen.flac
 import tagging
 
@@ -72,7 +72,7 @@ def run_pipeline(cmds):
 
 def locate(root, match_function, ignore_dotfiles=True):
     '''
-    Yields all filenames within the root directory for which match_function return True.
+    Yields all filenames within the root directory for which match_function returns True.
     '''
     for path, dirs, files in os.walk(root):
         for filename in (os.path.abspath(os.path.join(path, filename)) for filename in files if match_function(filename)):
@@ -101,19 +101,32 @@ def is_multichannel(flac_dir):
     flacs = (mutagen.flac.FLAC(flac_file) for flac_file in locate(flac_dir, ext_matcher('.flac')))
     return any(flac.info.channels > 2 for flac in flacs)
 
-def needs_resampleing(flac_dir):
+def needs_resampling(flac_dir):
     '''
-    Returns True if any FLAC within flac_dir needs resampleing when
+    Returns True if any FLAC within flac_dir needs resampling when
     transcoded.
     '''
     return is_24bit(flac_dir)
 
-def transcode_commands(output_format, resample,needed_sample_rate,flac_file, transcode_file):
+def resample_rate(flac_dir):
+    '''
+    Returns the rate to which the release should be resampled.
+    '''
+    flacs = (mutagen.flac.FLAC(flac_file) for flac_file in locate(flac_dir, ext_matcher('.flac')))
+    original_rate = max(flac.info.sample_rate for flac in flacs)
+    if original_rate % 44100 == 0:
+        return 44100
+    elif original_rate % 48000 == 0:
+        return 48000
+    else:
+        return None
+
+def transcode_commands(output_format, resample, needed_sample_rate, flac_file, transcode_file):
     '''
     Return a list of transcode steps (one command per list element),
     which can be used to create a transcode pipeline for flac_file ->
     transcode_file using the specified output_format, plus any
-    resampleing, if needed.
+    resampling, if needed.
     '''
     if resample:
         flac_decoder = 'sox %(FLAC)s -G -b 16 -t wav - rate -v -L %(SAMPLERATE)s dither'
@@ -131,16 +144,16 @@ def transcode_commands(output_format, resample,needed_sample_rate,flac_file, tra
         transcoding_steps.append(flac_encoder)
 
     transcode_args = {
-        'FLAC' : pipes.quote(flac_file.encode(sys.getfilesystemencoding())),
-        'FILE' : pipes.quote(transcode_file.encode(sys.getfilesystemencoding())),
+        'FLAC' : pipes.quote(flac_file),
+        'FILE' : pipes.quote(transcode_file),
         'OPTS' : encoders[output_format]['opts'],
         'SAMPLERATE' : needed_sample_rate,
-        }
+    }
 
     if output_format == 'FLAC' and resample:
         commands = ['sox %(FLAC)s -G -b 16 %(FILE)s rate -v -L %(SAMPLERATE)s dither' % transcode_args]
     else:
-        commands = map(lambda cmd : cmd % transcode_args, transcoding_steps)
+        commands = map(lambda cmd: cmd % transcode_args, transcoding_steps)
     return commands
 
 # Pool.map() can't pickle lambdas, so we need a helper function.
@@ -157,24 +170,24 @@ def transcode(flac_file, output_dir, output_format):
     bits_per_sample = flac_info.info.bits_per_sample
     resample = sample_rate > 48000 or bits_per_sample > 16
 
-    #If resampling isn't needed then needed_sample_rate will not be used.
-    needed_sample_rate=None
-    
+    # if resampling isn't needed then needed_sample_rate will not be used.
+    needed_sample_rate = None
+
     if resample:
-        if (sample_rate == 88200) or (sample_rate == 176400):
+        if sample_rate % 44100 == 0:
             needed_sample_rate = '44100'
-        elif sample_rate == 96000:
+        elif sample_rate % 48000 == 0:
             needed_sample_rate = '48000'
         else:
-            raise UnknownSampleRateException('FLAC file "{0}" has a sample rate {1}, which is not 88.2 , 176.4 or 96kHz but needs resampling, this is unsupported'.format(flac_file,sample_rate))
-
-          
+            raise UnknownSampleRateException('FLAC file "{0}" has a sample rate {1}, which is not 88.2 , 176.4 or 96kHz but needs resampling, this is unsupported'.format(flac_file, sample_rate))
 
     if flac_info.info.channels > 2:
         raise TranscodeDownmixException('FLAC file "%s" has more than 2 channels, unsupported' % flac_file)
 
     # determine the new filename
-    transcode_file = os.path.join(output_dir, os.path.splitext(os.path.basename(flac_file))[0])
+    transcode_basename = os.path.splitext(os.path.basename(flac_file))[0]
+    transcode_basename = re.sub(r'[\?<>\\*\|"]', '_', transcode_basename)
+    transcode_file = os.path.join(output_dir, transcode_basename)
     transcode_file += encoders[output_format]['ext']
 
     if not os.path.exists(os.path.dirname(transcode_file)):
@@ -241,8 +254,8 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
     output_dir = os.path.abspath(output_dir)
     flac_files = locate(flac_dir, ext_matcher('.flac'))
 
-    # check if we need to resample to 16/44
-    resample = needs_resampleing(flac_dir)
+    # check if we need to resample
+    resample = needs_resampling(flac_dir)
 
     # check if we need to encode
     if output_format == 'FLAC' and not resample:
@@ -322,14 +335,14 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
         raise
 
 def make_torrent(input_dir, output_dir, tracker, passkey):
-    torrent = os.path.join(output_dir, os.path.basename(input_dir).encode(sys.getfilesystemencoding())) + ".torrent"
+    torrent = os.path.join(output_dir, os.path.basename(input_dir)) + ".torrent"
     if not os.path.exists(os.path.dirname(torrent)):
         os.path.makedirs(os.path.dirname(torrent))
     tracker_url = '%(tracker)s%(passkey)s/announce' % {
         'tracker' : tracker,
         'passkey' : passkey,
     }
-    command = ["mktorrent", "-p", "-a", tracker_url, "-o", torrent, input_dir.encode(sys.getfilesystemencoding())]
+    command = ["mktorrent", "-p", "-a", tracker_url, "-o", torrent, input_dir]
     subprocess.check_output(command, stderr=subprocess.STDOUT)
     return torrent
 
@@ -339,7 +352,7 @@ def main():
     parser.add_argument('input_dir')
     parser.add_argument('output_dir')
     parser.add_argument('output_format', choices=encoders.keys())
-    parser.add_argument('-j', '--threads', default=multiprocessing.cpu_count())
+    parser.add_argument('-j', '--threads', default=multiprocessing.cpu_count(), type=int)
     args = parser.parse_args()
 
     transcode_release(os.path.expanduser(args.input_dir), os.path.expanduser(args.output_dir), args.output_format, args.threads)

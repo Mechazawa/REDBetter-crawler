@@ -19,7 +19,10 @@ def banner():
 
 def create_description(torrent, flac_dir, format, permalink):
     # Create an example command to document the transcode process.
-    cmds = transcode.transcode_commands(format, transcode.needs_dithering(flac_dir), 'input.flac', 'output' + transcode.encoders[format]['ext'])
+    cmds = transcode.transcode_commands(format,
+            transcode.needs_resampling(flac_dir),
+            transcode.resample_rate(flac_dir),
+            'input.flac', 'output' + transcode.encoders[format]['ext'])
 
     description = [
         'Transcode of [url=%s]%s[/url]' % (permalink, permalink),
@@ -144,6 +147,8 @@ def main():
             shutil.copy(flac_file, flac_dir)
         else:
             flac_dir = os.path.join(data_dir, whatapi.unescape(torrent['filePath']))
+
+        flac_dir = flac_dir.encode(sys.getfilesystemencoding())
 
         try:
             if transcode.is_24bit(flac_dir) and torrent['encoding'] != '24bit Lossless':
