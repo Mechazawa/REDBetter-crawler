@@ -73,7 +73,7 @@ list).
 `media` is a list of lossless media types you want to consider for
 transcoding. The default value is all What.CD lossless formats, but if
 you want to transcode only CD and vinyl media, for example, you would
-set this to 'cd, vinyl'
+set this to 'cd, vinyl'.
 `24bit_behaviour` defines what happens when the program encounters a FLAC 
 that it thinks is 24bits. If it is set to '2', every FLAC that has a bits-
 per-sample property of 24 will be silently re-categorized. If it set to '1',
@@ -89,6 +89,7 @@ You should end up with something like this:
     torrent_dir = /srv/torrents
     formats = flac, v0, 320
     media = cd, vinyl, web
+    24bit_behaviour = 0
 
 Alright! Now you're ready to use whatbetter.
 
