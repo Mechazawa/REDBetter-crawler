@@ -15,7 +15,7 @@ import tagging
 from _version import __version__
 
 def banner():
-    return 'Created with [url=http://github.com/zacharydenton/whatbetter]whatbetter[/url] version %s.' % __version__
+    return 'Created with version of whatbetter 1.3. Maintained by timlardner'
 
 def create_description(torrent, flac_dir, format, permalink):
     # Create an example command to document the transcode process.
@@ -80,12 +80,14 @@ def main():
         config.set('whatcd', 'torrent_dir', '')
         config.set('whatcd', 'formats', 'flac, v0, 320, v2')
         config.set('whatcd', 'media', ', '.join(whatapi.lossless_media))
+        config.set('whatcd', '24bit_behaviour','0')
         config.write(open(args.config, 'w'))
         print 'Please edit the configuration file: %s' % args.config
         sys.exit(2)
     finally:
         username = config.get('whatcd', 'username')
         password = config.get('whatcd', 'password')
+        do_24_bit = config.get('whatcd', '24bit_behaviour')
         data_dir = os.path.expanduser(config.get('whatcd', 'data_dir'))
         try:
             output_dir = os.path.expanduser(config.get('whatcd', 'output_dir'))
@@ -149,23 +151,27 @@ def main():
             flac_dir = os.path.join(data_dir, whatapi.unescape(torrent['filePath']))
 
         flac_dir = flac_dir.encode(sys.getfilesystemencoding())
-
-        try:
-            if transcode.is_24bit(flac_dir) and torrent['encoding'] != '24bit Lossless':
-                # A lot of people are uploading FLACs from Bandcamp without realizing
-                # that they're actually 24 bit files (usually 24/44.1). Since we know for
-                # sure whether the files are 24 bit, we might as well correct the listing
-                # on the site (and get an extra upload in the process).
-                if args.no_24bit_edit:
-                    print "Release is actually 24-bit lossless, skipping."
-                    continue
-                print "Marking release as 24bit lossless."
-                api.set_24bit(torrent)
-                group = api.request('torrentgroup', id=groupid)
-                torrent = [t for t in group['torrents'] if t['id'] == torrentid][0]
-        except Exception as e:
-            print "Error: can't edit 24-bit torrent - skipping: %s" % e
-            continue
+        if int(do_24_bit):
+            try:
+                if transcode.is_24bit(flac_dir) and torrent['encoding'] != '24bit Lossless':
+                    # A lot of people are uploading FLACs from Bandcamp without realizing
+                    # that they're actually 24 bit files (usually 24/44.1). Since we know for
+                    # sure whether the files are 24 bit, we might as well correct the listing
+                    # on the site (and get an extra upload in the process).
+                    if args.no_24bit_edit:
+                        print "Release is actually 24-bit lossless, skipping."
+                        continue
+                    if int(do_24_bit) == 1:  
+                        confirmation = raw_input("Mark release as 24bit lossless? y/n: ")
+                        if confirmation != 'y':
+                            continue
+                    print "Marking release as 24bit lossless."
+                  #  api.set_24bit(torrent)
+                    group = api.request('torrentgroup', id=groupid)
+                    torrent = [t for t in group['torrents'] if t['id'] == torrentid][0]
+            except Exception as e:
+                print "Error: can't edit 24-bit torrent - skipping: %s" % e
+                continue
 
         if transcode.is_multichannel(flac_dir):
             print "This is a multichannel release, which is unsupported - skipping"
