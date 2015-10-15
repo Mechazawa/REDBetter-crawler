@@ -60,6 +60,7 @@ like this:
     torrent_dir =
     formats = flac, v0, 320, v2
     media = sacd, soundboard, web, dvd, cd, dat, vinyl, blu-ray
+    24bit_behaviour = 0
 
 `username` and `password` are your What.CD login credentials. 
 `data_dir` is the directory where your downloads are stored. 
@@ -73,6 +74,10 @@ list).
 transcoding. The default value is all What.CD lossless formats, but if
 you want to transcode only CD and vinyl media, for example, you would
 set this to 'cd, vinyl'
+`24bit_behaviour` defines what happens when the program encounters a FLAC 
+that it thinks is 24bits. If it is set to '2', every FLAC that has a bits-
+per-sample property of 24 will be silently re-categorized. If it set to '1',
+a prompt will appear. The default is '0' which ignores these occurrences.
 
 You should end up with something like this:
 
