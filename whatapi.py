@@ -116,6 +116,17 @@ class WhatAPI:
             return parsed['response']
         except ValueError:
             raise RequestException
+
+    def request_html(self, action, **kwargs):
+        while time.time() - self.last_request < self.rate_limit:
+            time.sleep(0.1)
+
+        ajaxpage = 'https://what.cd/' + action
+        if self.authkey:
+            kwargs['auth'] = self.authkey
+        r = self.session.get(ajaxpage, params=kwargs, allow_redirects=False)
+        self.last_request = time.time()
+        return r.content
     
     def get_artist(self, id=None, format='MP3', best_seeded=True):
         res = self.request('artist', id=id)
@@ -204,6 +215,38 @@ class WhatAPI:
 
     def permalink(self, torrent):
         return "https://what.cd/torrents.php?torrentid=%s" % torrent['id']
+
+    def get_better(self, type=3):
+        p = re.compile(ur'(torrents\.php\?action=download&(?:amp;)?id=(\d+)[^"]*).*(torrents\.php\?id=\d+(?:&amp;|&)torrentid=\2\#torrent\d+)', re.DOTALL)
+        out = []
+        data = self.request_html('better.php', method='transcode', type=type)
+        for torrent, id, perma in p.findall(data):
+            out.append({
+                'permalink': perma.replace('&amp;', '&'),
+                'id': int(id),
+                'torrent': torrent.replace('&amp;', '&'),
+            })
+        return out
+
+    def get_torrent(self, torrent_id):
+        '''Downloads the torrent at torrent_id using the authkey and passkey'''
+        while time.time() - self.last_request < self.rate_limit:
+            time.sleep(0.1)
+
+        torrentpage = 'https://ssl.what.cd/torrents.php'
+        params = {'action': 'download', 'id': torrent_id}
+        if self.authkey:
+            params['authkey'] = self.authkey
+            params['torrent_pass'] = self.passkey
+        r = self.session.get(torrentpage, params=params, allow_redirects=False)
+
+        self.last_request = time.time() + 2.0
+        if r.status_code == 200 and 'application/x-bittorrent' in r.headers['content-type']:
+            return r.content
+        return None
+
+    def get_torrent_info(self, id):
+        return self.request('torrent', id=id)['torrent']
 
 def unescape(text):
     return HTMLParser.HTMLParser().unescape(text)

@@ -1,18 +1,19 @@
 #!/usr/bin/env python
-import os
-import sys
-import shutil
+import ConfigParser
 import argparse
+import cPickle as pickle
+import os
+import shutil
+import sys
 import tempfile
 import urlparse
-import subprocess
-import ConfigParser
-import cPickle as pickle
 from multiprocessing import cpu_count
-import whatapi
-import transcode
+
 import tagging
+import transcode
+import whatapi
 from _version import __version__
+
 
 def banner():
     return 'Created with version of whatbetter-crawler 1.3. Maintained by Mechazawa\n' \
@@ -21,8 +22,8 @@ def banner():
 def create_description(torrent, flac_dir, format, permalink):
     # Create an example command to document the transcode process.
     cmds = transcode.transcode_commands(format,
-            transcode.needs_resampling(flac_dir),
-            transcode.resample_rate(flac_dir),
+                                        transcode.needs_resampling(flac_dir),
+                                        transcode.resample_rate(flac_dir),
             'input.flac', 'output' + transcode.encoders[format]['ext'])
 
     description = [
@@ -55,7 +56,7 @@ def main():
     parser.add_argument('release_urls', nargs='*', help='the URL where the release is located')
     parser.add_argument('-s', '--single', action='store_true', help='only add one format per release (useful for getting unique groups)')
     parser.add_argument('-j', '--threads', type=int, help='number of threads to use when transcoding',
-            default=cpu_count())
+            default=cpu_count() - 1)
     parser.add_argument('--config', help='the location of the configuration file', \
             default=os.path.expanduser('~/.whatbetter/config'))
     parser.add_argument('--cache', help='the location of the cache', \
@@ -144,7 +145,8 @@ def main():
             if not os.path.exists(flac_file):
                 print "Path not found - skipping: %s" % flac_file
                 continue
-            flac_dir = os.path.join(data_dir, "%s (%s) [FLAC]" % (whatapi.unescape(group['group']['name']), group['group']['year']))
+            flac_dir = os.path.join(data_dir, "%s (%s) [FLAC]" % (
+            whatapi.unescape(group['group']['name']), group['group']['year']))
             if not os.path.exists(flac_dir):
                 os.makedirs(flac_dir)
             shutil.copy(flac_file, flac_dir)

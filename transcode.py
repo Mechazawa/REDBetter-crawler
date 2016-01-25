@@ -1,17 +1,17 @@
 #!/usr/bin/env python
-import os
-import re
-import sys
 import errno
+import multiprocessing
+import os
 import pipes
+import re
 import shlex
 import shutil
 import signal
-import fnmatch
-import tempfile
 import subprocess
-import multiprocessing
+import sys
+
 import mutagen.flac
+
 import tagging
 
 encoders = {
