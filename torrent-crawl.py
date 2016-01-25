@@ -47,7 +47,7 @@ def main():
     while len(cache) < args.count:
         print 'Refreshing better.php and finding %i candidates' % (args.count - len(cache))
         for torrent in api.get_better(args.better):
-            if len(cache) < args.count:
+            if len(cache) >= args.count:
                 break
 
             print "Testing #%i" % torrent['id']
