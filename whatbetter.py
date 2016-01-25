@@ -15,7 +15,8 @@ import tagging
 from _version import __version__
 
 def banner():
-    return 'Created with version of whatbetter 1.3. Maintained by timlardner'
+    return 'Created with version of whatbetter-crawler 1.3. Maintained by Mechazawa\n' \
+           'This transcoding was done by an autonomous system'
 
 def create_description(torrent, flac_dir, format, permalink):
     # Create an example command to document the transcode process.
