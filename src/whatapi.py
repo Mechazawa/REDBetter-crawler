@@ -11,14 +11,12 @@ from cStringIO import StringIO
 headers = {
     'Connection': 'keep-alive',
     'Cache-Control': 'max-age=0',
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_3)'\
-        'AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.79'\
-        'Safari/535.11',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9'\
-        ',*/*;q=0.8',
-    'Accept-Encoding': 'gzip,deflate,sdch',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:36.0) Gecko/20100101 Firefox/36.0',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Encoding': 'gzip,deflate',
     'Accept-Language': 'en-US,en;q=0.8',
-    'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3'}
+    'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3'
+}
 
 # gazelle is picky about case in searches with &media=x
 media_search_map = {
@@ -30,7 +28,7 @@ media_search_map = {
     'dat': 'DAT',
     'web': 'WEB',
     'blu-ray': 'Blu-ray'
-    }
+}
 
 lossless_media = set(media_search_map.keys())
 

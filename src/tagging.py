@@ -32,14 +32,7 @@ import mutagen.flac
 import mutagen.mp3
 from mutagen.easyid3 import EasyID3
 
-numeric_tags = set([
-        'tracknumber',
-        'discnumber',
-        'tracktotal',
-        'totaltracks',
-        'disctotal',
-        'totaldiscs',
-        ])
+numeric_tags = {'tracknumber', 'discnumber', 'tracktotal', 'totaltracks', 'disctotal', 'totaldiscs'}
 
 class TaggingException(Exception):
     pass
@@ -68,7 +61,7 @@ def scrub_tag(name, value):
 
     # Numeric tags should not be '0' (but tracknumber 0 is OK, e.g.,
     # hidden track).
-    if name in numeric_tags - set(['tracknumber']):
+    if name in numeric_tags - {'tracknumber'}:
         if re.match(r"""0+(/.*)?$""", scrubbed_value):
             return ''
 

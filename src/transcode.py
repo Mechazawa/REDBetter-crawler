@@ -1,18 +1,20 @@
 #!/usr/bin/env python
-import os
-import re
-import sys
 import errno
+import fnmatch
+import multiprocessing
+import os
 import pipes
+import re
 import shlex
 import shutil
 import signal
-import fnmatch
-import tempfile
 import subprocess
-import multiprocessing
+import sys
+import tempfile
+
 import mutagen.flac
-import tagging
+
+from src import tagging
 
 encoders = {
     '320':  {'enc': 'lame', 'ext': '.mp3',  'opts': '-h -b 320 --ignore-tag-errors'},
@@ -157,8 +159,8 @@ def transcode_commands(output_format, resample, needed_sample_rate, flac_file, t
     return commands
 
 # Pool.map() can't pickle lambdas, so we need a helper function.
-def pool_transcode((flac_file, output_dir, output_format)):
-    return transcode(flac_file, output_dir, output_format)
+def pool_transcode(x):
+    return transcode(*x)
 
 def transcode(flac_file, output_dir, output_format):
     '''
@@ -262,7 +264,7 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
         # XXX: if output_dir is not the same as flac_dir, this may not
         # do what the user expects.
         if output_dir != os.path.dirname(flac_dir):
-            print "Warning: no encode necessary, so files won't be placed in", output_dir
+            print("Warning: no encode necessary, so files won't be placed in", output_dir)
         return flac_dir
 
     # make a new directory for the transcoded files
