@@ -19,11 +19,12 @@ def main():
                         default=os.path.expanduser('~/.whatbetter/cache-crawl'))
 
     args = parser.parse_args()
-    while parse_stuff(args.cache):
+    while parse_stuff(args.cache) and not os.path.exists(lockfile):
         print "Done encoding cycle"
 
 
 def parse_stuff(cache_file):
+    open(lockfile, 'w').close()
     try:
         cache = json.load(open(cache_file))
     except:
@@ -45,6 +46,7 @@ def parse_stuff(cache_file):
     json.dump(cache_new, open(cache_file, 'wb'))
     print "Executing... " + cmdline
     os.system(cmdline)
+    os.remove(lockfile)
     return True
 
 
