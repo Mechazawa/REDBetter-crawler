@@ -28,7 +28,7 @@ setup(
         'transcode',
         'whatapi'
     ],
-    scripts = ['whatbetter.py'],
+    scripts = ['whatbetter'],
     install_requires = [
         'mutagen',
         'mechanize',
