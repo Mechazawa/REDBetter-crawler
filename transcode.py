@@ -156,7 +156,7 @@ def transcode_commands(output_format, resample, needed_sample_rate, flac_file, t
         commands = map(lambda cmd: cmd % transcode_args, transcoding_steps)
     return commands
 
-# Pool.map() can't pickle lambdas, so we need a helper function.
+# Pool.map() can't encode lambdas, so we need a helper function.
 def pool_transcode((flac_file, output_dir, output_format)):
     return transcode(flac_file, output_dir, output_format)
 

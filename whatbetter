@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import ConfigParser
 import argparse
-import cPickle as pickle
+import json
 import os
 import shutil
 import sys
@@ -119,10 +119,10 @@ def main():
     api = whatapi.WhatAPI(username, password)
 
     try:
-        seen = pickle.load(open(args.cache))
+        seen = json.load(open(args.cache))
     except:
         seen = set()
-        pickle.dump(seen, open(args.cache, 'wb'))
+        json.dump(seen, open(args.cache, 'wb'))
 
     print 'Searching for transcode candidates...'
     if args.release_urls:
@@ -222,7 +222,7 @@ def main():
                 break
 
         seen.add(str(torrentid))
-        pickle.dump(seen, open(args.cache, 'wb'))
+        json.dump(seen, open(args.cache, 'wb'))
 
 if __name__ == "__main__":
     main()
