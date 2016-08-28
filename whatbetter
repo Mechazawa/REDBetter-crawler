@@ -56,7 +56,7 @@ def main():
     parser.add_argument('release_urls', nargs='*', help='the URL where the release is located')
     parser.add_argument('-s', '--single', action='store_true', help='only add one format per release (useful for getting unique groups)')
     parser.add_argument('-j', '--threads', type=int, help='number of threads to use when transcoding',
-            default=cpu_count() - 1)
+            default=max(cpu_count() - 1, 1))
     parser.add_argument('--config', help='the location of the configuration file', \
             default=os.path.expanduser('~/.whatbetter/config'))
     parser.add_argument('--cache', help='the location of the cache', \
