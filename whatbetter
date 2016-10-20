@@ -136,9 +136,12 @@ def main():
         group = api.request('torrentgroup', id=groupid)
         torrent = [t for t in group['torrents'] if t['id'] == torrentid][0]
 
+        release = "Release found: %s (%s)" % (whatapi.unescape(group['group']['name']), group['group']['year'])
+        releaseurl = "Release URL: %s" % api.release_url(group, torrent)
+        
         print
-        print "Release found: %s (%s)" % (whatapi.unescape(group['group']['name']), group['group']['year'])
-        print "Release URL: %s" % api.release_url(group, torrent)
+        print release.encode("utf-8")
+        print releaseurl.encode("utf-8")
 
         if not torrent['filePath']:
             flac_file = os.path.join(data_dir, whatapi.unescape(torrent['fileList']).split('{{{')[0])
