@@ -1,4 +1,4 @@
-# Metadata tag support for whatbetter.
+# Metadata tag support for apollobetter.
 #
 # Copyright (c) 2013 Milky Joe <milkiejoe@gmail.com>
 #
@@ -22,7 +22,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Simple tagging for whatbetter.
+"""Simple tagging for apollobetter.
 """
 
 import os.path
@@ -151,7 +151,7 @@ def copy_tags(flac_file, transcode_file):
 
     transcode_info.save()
 
-# EasyID3 extensions for whatbetter.
+# EasyID3 extensions for apollobetter.
 
 for key, frameid in {
     'albumartist': 'TPE2',

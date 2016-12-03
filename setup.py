@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-Installer script for whatbetter.
+Installer script for apollobetter.
 '''
 
 from setuptools import setup

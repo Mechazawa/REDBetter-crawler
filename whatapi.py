@@ -76,14 +76,14 @@ class WhatAPI:
         self.authkey = None
         self.passkey = None
         self.userid = None
-        self.tracker = "http://tracker.what.cd:34000/"
+        self.tracker = "http://apollo.rip:2095/"
         self.last_request = time.time()
         self.rate_limit = 2.0 # seconds between requests
         self._login()
 
     def _login(self):
         '''Logs in user and gets authkey from server'''
-        loginpage = 'https://what.cd/login.php'
+        loginpage = 'https://apollo.rip/login.php'
         data = {'username': self.username,
                 'password': self.password}
         r = self.session.post(loginpage, data=data)
@@ -95,14 +95,14 @@ class WhatAPI:
         self.userid = accountinfo['id']
 
     def logout(self):
-        self.session.get("https://what.cd/logout.php?auth=%s" % self.authkey)
+        self.session.get("https://apollo.rip/logout.php?auth=%s" % self.authkey)
 
     def request(self, action, **kwargs):
         '''Makes an AJAX request at a given action page'''
         while time.time() - self.last_request < self.rate_limit:
             time.sleep(0.1)
 
-        ajaxpage = 'https://what.cd/ajax.php'
+        ajaxpage = 'https://apollo.rip/ajax.php'
         params = {'action': action}
         if self.authkey:
             params['auth'] = self.authkey
@@ -121,7 +121,7 @@ class WhatAPI:
         while time.time() - self.last_request < self.rate_limit:
             time.sleep(0.1)
 
-        ajaxpage = 'https://what.cd/' + action
+        ajaxpage = 'https://apollo.rip/' + action
         if self.authkey:
             kwargs['auth'] = self.authkey
         r = self.session.get(ajaxpage, params=kwargs, allow_redirects=False)
@@ -164,7 +164,7 @@ class WhatAPI:
         else:
             media_params = ['&media=%s' % media_search_map[m] for m in media]
 
-        url = 'https://what.cd/torrents.php?type=snatched&userid=%s&format=FLAC' % self.userid
+        url = 'https://apollo.rip/torrents.php?type=snatched&userid=%s&format=FLAC' % self.userid
         for mp in media_params:
             page = 1
             done = False
@@ -178,7 +178,7 @@ class WhatAPI:
                 page += 1
 
     def upload(self, group, torrent, new_torrent, format, description=[]):
-        url = "https://what.cd/upload.php?groupid=%s" % group['group']['id']
+        url = "https://apollo.rip/upload.php?groupid=%s" % group['group']['id']
         response = self.session.get(url)
         forms = mechanize.ParseFile(StringIO(response.text.encode('utf-8')), url)
         form = forms[-1]
@@ -202,7 +202,7 @@ class WhatAPI:
         return self.session.post(url, data=data, headers=dict(headers))
 
     def set_24bit(self, torrent):
-        url = "https://what.cd/torrents.php?action=edit&id=%s" % torrent['id']
+        url = "https://apollo.rip/torrents.php?action=edit&id=%s" % torrent['id']
         response = self.session.get(url)
         forms = mechanize.ParseFile(StringIO(response.text.encode('utf-8')), url)
         form = forms[-3]
@@ -211,10 +211,10 @@ class WhatAPI:
         return self.session.post(url, data=data, headers=dict(headers))
 
     def release_url(self, group, torrent):
-        return "https://what.cd/torrents.php?id=%s&torrentid=%s#torrent%s" % (group['group']['id'], torrent['id'], torrent['id'])
+        return "https://apollo.rip/torrents.php?id=%s&torrentid=%s#torrent%s" % (group['group']['id'], torrent['id'], torrent['id'])
 
     def permalink(self, torrent):
-        return "https://what.cd/torrents.php?torrentid=%s" % torrent['id']
+        return "https://apollo.rip/torrents.php?torrentid=%s" % torrent['id']
 
     def get_better(self, type=3):
         p = re.compile(ur'(torrents\.php\?action=download&(?:amp;)?id=(\d+)[^"]*).*(torrents\.php\?id=\d+(?:&amp;|&)torrentid=\2\#torrent\d+)', re.DOTALL)
@@ -233,7 +233,7 @@ class WhatAPI:
         while time.time() - self.last_request < self.rate_limit:
             time.sleep(0.1)
 
-        torrentpage = 'https://ssl.what.cd/torrents.php'
+        torrentpage = 'https://apollo.rip/torrents.php'
         params = {'action': 'download', 'id': torrent_id}
         if self.authkey:
             params['authkey'] = self.authkey

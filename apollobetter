@@ -16,7 +16,7 @@ from _version import __version__
 
 
 def banner():
-    return 'Created with version of whatbetter-crawler 1.3. Maintained by Mechazawa\n' \
+    return 'Created with version of apollobetter-crawler 1.3. Maintained by ApexWeed\n' \
            'This transcoding was done by an autonomous system'
 
 def create_description(torrent, flac_dir, format, permalink):
@@ -52,15 +52,15 @@ def formats_needed(group, torrent, supported_formats):
     return [format for format in missing_formats if format in allowed_formats]
 
 def main():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, prog='whatbetter')
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, prog='apollobetter')
     parser.add_argument('release_urls', nargs='*', help='the URL where the release is located')
     parser.add_argument('-s', '--single', action='store_true', help='only add one format per release (useful for getting unique groups)')
     parser.add_argument('-j', '--threads', type=int, help='number of threads to use when transcoding',
             default=max(cpu_count() - 1, 1))
     parser.add_argument('--config', help='the location of the configuration file', \
-            default=os.path.expanduser('~/.whatbetter/config'))
+            default=os.path.expanduser('~/.apollobetter/config'))
     parser.add_argument('--cache', help='the location of the cache', \
-            default=os.path.expanduser('~/.whatbetter/cache'))
+            default=os.path.expanduser('~/.apollobetter/cache'))
     parser.add_argument('-U', '--no-upload', action='store_true', help='don\'t upload new torrents (in case you want to do it manually)')
     parser.add_argument('-E', '--no-24bit-edit', action='store_true', help='don\'t try to edit 24-bit torrents mistakenly labeled as 16-bit')
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)

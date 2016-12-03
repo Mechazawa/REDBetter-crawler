@@ -1,20 +1,20 @@
 Introduction
 ------------
 
-whatbetter is a script which automatically transcodes and uploads these
-files to What.CD.
+apollobetter is a script which automatically transcodes and uploads these
+files to apollo.rip.
 
 The following command will scan through every FLAC you have ever
 downloaded (if it is in , determine which formats are needed, transcode the FLAC to
 each needed format, and upload each format to What.CD -- automatically.
 
-    $ whatbetter
+    $ apollobetter
 
 Installation
 ------------
 
 You're going to need to install a few dependencies before using
-whatbetter.
+apollobetter.
 
 First and foremost, you will need Python 2.7 or newer.
 
@@ -51,16 +51,16 @@ you could contact your provider to have these packages installed.
 
 At this point you may execute the following command:
 
-    $ whatbetter
+    $ apollobetter
 
 And you will receive a notification stating that you should edit the
-configuration file \~/.whatbetter/config (if you're lucky).
+configuration file \~/.apollobetter/config (if you're lucky).
 
 Configuration
 -------------
 
 You've made it far! Congratulations. Open up the file
-\~/.whatbetter/config in a text editor. You're going to see something
+\~/.apollobetter/config in a text editor. You're going to see something
 like this:
 
     [whatcd]
@@ -73,7 +73,7 @@ like this:
     media = sacd, soundboard, web, dvd, cd, dat, vinyl, blu-ray
     24bit_behaviour = 0
 
-`username` and `password` are your What.CD login credentials. 
+`username` and `password` are your apollo.rip login credentials. 
 `data_dir` is the directory where your downloads are stored. 
 `output_dir` is the directory where your transcodes will be created. If
 the value is blank, `data_dir` will be used.
@@ -102,13 +102,13 @@ You should end up with something like this:
     media = cd, vinyl, web
     24bit_behaviour = 0
 
-Alright! Now you're ready to use whatbetter.
+Alright! Now you're ready to use apollobetter.
 
 Usage
 -----
 
-    usage: whatbetter [-h] [-s] [--config CONFIG] [--cache CACHE]
-                      [release_urls [release_urls ...]]
+    usage: apollobetter [-h] [-s] [--config CONFIG] [--cache CACHE]
+                        [release_urls [release_urls ...]]
 
     positional arguments:
       release_urls     the URL where the release is located
@@ -118,8 +118,8 @@ Usage
       -s, --single     only add one format per release (useful for getting unique
                        groups)
       --config CONFIG  the location of the configuration file (default:
-                       ~/.whatbetter/config)
-      --cache CACHE    the location of the cache (default: ~/.whatbetter/cache)
+                       ~/.apollobetter/config)
+      --cache CACHE    the location of the cache (default: ~/.apollobetter/cache)
 
 Examples
 --------
@@ -127,18 +127,18 @@ Examples
 To transcode and upload every snatch you've ever downloaded (this may
 take a while):
 
-    $ whatbetter
+    $ apollobetter
 
 To transcode and upload a specific release (provided you have already
 downloaded the FLAC and it is located in your `data_dir`):
 
-    $ whatbetter http://what.cd/torrents.php?id=1000\&torrentid=1000000
+    $ apollobetter http://apollo.rip/torrents.php?id=1000\&torrentid=1000000
 
-Note that if you specify a particular release(s), whatbetter will
+Note that if you specify a particular release(s), apollobetter will
 ignore your configuration's media types and attempt to transcode the
 releases you have specified regardless of their media type (so long as
 they are lossless types).
 
-Your first time running whatbetter might take a while, but after it has
+Your first time running apollobetter might take a while, but after it has
 successfully gone through and checked everything, it'll go faster any
 consecutive runs due to it's caching method.
