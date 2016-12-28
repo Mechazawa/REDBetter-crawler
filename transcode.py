@@ -229,18 +229,44 @@ def transcode(flac_file, output_dir, output_format):
 def get_transcode_dir(flac_dir, output_dir, output_format, resample):
     transcode_dir = os.path.basename(flac_dir)
 
-    if 'FLAC' in flac_dir.upper():
+    if 'HD FLAC' in flac_dir.upper():
+        transcode_dir = re.sub(re.compile('HD FLAC', re.I), output_format, transcode_dir)
+    elif 'FLAC HD' in flac_dir.upper():
+        transcode_dir = re.sub(re.compile('FLAC HD', re.I), output_format, transcode_dir)
+    elif 'FLAC 24' in flac_dir.upper():
+        transcode_dir = re.sub(re.compile('FLAC 24', re.I), output_format, transcode_dir) 
+    elif 'FLAC24' in flac_dir.upper():
+        transcode_dir = re.sub(re.compile('FLAC24', re.I), output_format, transcode_dir) 
+    elif 'FLAC' in flac_dir.upper():
         transcode_dir = re.sub(re.compile('FLAC', re.I), output_format, transcode_dir)
+    elif '24 BITS' in flac_dir.upper():
+        transcode_dir = re.sub(re.compile('24 BITS', re.I), output_format, transcode_dir)
+    elif '24BITS' in flac_dir.upper():
+        transcode_dir = re.sub(re.compile('24BITS', re.I), output_format, transcode_dir)
+    elif '24BIT' in flac_dir.upper():
+        transcode_dir = re.sub(re.compile('24BIT', re.I), output_format, transcode_dir)
+    elif '24 BIT' in flac_dir.upper():
+        transcode_dir = re.sub(re.compile('24 BIT', re.I), output_format, transcode_dir)
     else:
         transcode_dir = transcode_dir + " (" + output_format + ")"
         if output_format != 'FLAC':
             transcode_dir = re.sub(re.compile('FLAC', re.I), '', transcode_dir)
     if resample:
-        if '24' in flac_dir and '96' in flac_dir:
+        if '24' in flac_dir and '192' in flac_dir:
+            transcode_dir = transcode_dir.replace('24', '16')
+            transcode_dir = transcode_dir.replace('192', '48')
+        elif '24' in flac_dir and '96' in flac_dir:
             # XXX: theoretically, this could replace part of the album title too.
             # e.g. "24 days in 96 castles - [24-96]" would become "16 days in 44 castles - [16-44]"
             transcode_dir = transcode_dir.replace('24', '16')
             transcode_dir = transcode_dir.replace('96', '48')
+        elif '24' in flac_dir and '48' in flac_dir:
+            transcode_dir = transcode_dir.replace('24', '16')
+        elif '24' in flac_dir and '88' in flac_dir:
+            transcode_dir = transcode_dir.replace('24', '16')
+            transcode_dir = transcode_dir.replace('88', '44')
+        elif '24' in flac_dir and '44.1' in flac_dir:
+            transcode_dir = transcode_dir.replace('24', '16')
         else:
             transcode_dir += " [16-44]"
 
