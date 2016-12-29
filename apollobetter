@@ -16,7 +16,7 @@ from _version import __version__
 
 
 def banner():
-    return 'Created with version of apollobetter-crawler 1.4. Maintained by ApexWeed\n' \
+    return 'Created with version of apollobetter-crawler 1.4. Maintained by mechazawa and ApexWeed\n' \
            'This transcoding was done by an autonomous system'
 
 def create_description(torrent, flac_dir, format, permalink):
@@ -115,7 +115,7 @@ def main():
 
     upload_torrent = not args.no_upload
 
-    print 'Logging in to What.CD...'
+    print 'Logging in to Apollo.rip...'
     api = whatapi.WhatAPI(username, password)
 
     try:
