@@ -6,7 +6,7 @@ files to apollo.rip.
 
 The following command will scan through every FLAC you have ever
 downloaded (if it is in , determine which formats are needed, transcode the FLAC to
-each needed format, and upload each format to What.CD -- automatically.
+each needed format, and upload each format to Apollo -- automatically.
 
     $ apollobetter
 
@@ -141,4 +141,4 @@ they are lossless types).
 
 Your first time running apollobetter might take a while, but after it has
 successfully gone through and checked everything, it'll go faster any
-consecutive runs due to it's caching method.
+consecutive runs due to it's caching method
