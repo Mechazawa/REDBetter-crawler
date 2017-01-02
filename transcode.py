@@ -310,7 +310,7 @@ def get_transcode_dir(flac_dir, output_dir, output_format, resample):
             elif '24' in flac_dir and '44 2' in flac_dir:
                 transcode_dir = transcode_dir.replace('24', '16')
                 transcode_dir = transcode_dir.replace('44 1', '44')
-            elif '24' in flac_dir and '4' in flac_dir:
+            elif '24' in flac_dir and '44' in flac_dir:
                 transcode_dir = transcode_dir.replace('24', '16')
             else:
                 transcode_dir += ' [16-44]'
