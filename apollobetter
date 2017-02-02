@@ -126,9 +126,15 @@ def main():
 
     print 'Searching for transcode candidates...'
     if args.release_urls:
-        print 'You supplied one or more release URLs, ignoring your configuration\'s media types.'
-        candidates = [(int(query['id']), int(query['torrentid'])) for query in\
-                [dict(urlparse.parse_qsl(urlparse.urlparse(url).query)) for url in args.release_urls]]
+        if len(args.release_urls) == 1 and os.path.isfile(args.release_urls[0]):
+            print 'You supplied a url list, ignoring your configuration\'s media types.'
+            with open(args.release_urls[0]) as f:
+                candidates = [(int(query['id']), int(query['torrentid'])) for query in\
+                        [dict(urlparse.parse_qsl(urlparse.urlparse(url).query)) for url in f]]
+        else:
+            print 'You supplied one or more release URLs, ignoring your configuration\'s media types.'
+            candidates = [(int(query['id']), int(query['torrentid'])) for query in\
+                    [dict(urlparse.parse_qsl(urlparse.urlparse(url).query)) for url in args.release_urls]]
     else:
         candidates = api.snatched(skip=seen, media=supported_media)
 
