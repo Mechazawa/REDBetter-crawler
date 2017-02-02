@@ -111,7 +111,9 @@ Usage
                         [release_urls [release_urls ...]]
 
     positional arguments:
-      release_urls     the URL where the release is located, if only one url is specified and is a file it is instead loaded as a list of urls
+      release_urls     the URL where the release is located, if only one url is
+                       specified and is a file it is instead loaded as a list of
+                       urls
 
     optional arguments:
       -h, --help       show this help message and exit
