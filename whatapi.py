@@ -76,7 +76,6 @@ class WhatAPI:
         self.authkey = None
         self.passkey = None
         self.userid = None
-        self.tracker = "https://mars.apollo.rip/"
         self.last_request = time.time()
         self.rate_limit = 2.0 # seconds between requests
         self._login()

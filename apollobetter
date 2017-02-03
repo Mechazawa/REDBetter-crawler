@@ -83,6 +83,7 @@ def main():
         config.set('whatcd', 'formats', 'flac, v0, 320, v2')
         config.set('whatcd', 'media', ', '.join(whatapi.lossless_media))
         config.set('whatcd', '24bit_behaviour','0')
+        config.set('whatcd', 'tracker', 'https://mars.apollo.rip/')
         config.write(open(args.config, 'w'))
         print 'Please edit the configuration file: %s' % args.config
         sys.exit(2)
@@ -112,6 +113,11 @@ def main():
                     sys.exit(2)
         except ConfigParser.NoOptionError:
             supported_media = whatapi.lossless_media
+
+        if not config.has_option('whatcd', 'tracker'):
+            config.set('whatcd', 'tracker', 'https://mars.apollo.rip')
+            config.write(open(args.config, 'w'))
+            print 'Tracker added to config file'
 
     upload_torrent = not args.no_upload
 
@@ -214,7 +220,7 @@ def main():
                 tmpdir = tempfile.mkdtemp()
                 try:
                     transcode_dir = transcode.transcode_release(flac_dir, output_dir, format, max_threads=args.threads)
-                    new_torrent = transcode.make_torrent(transcode_dir, tmpdir, api.tracker, api.passkey)
+                    new_torrent = transcode.make_torrent(transcode_dir, tmpdir, config.get('whatcd', 'tracker'), api.passkey)
                     if upload_torrent:
                         permalink = api.permalink(torrent)
                         description = create_description(torrent, flac_dir, format, permalink)

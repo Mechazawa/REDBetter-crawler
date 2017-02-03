@@ -72,6 +72,7 @@ like this:
     formats = flac, v0, 320, v2
     media = sacd, soundboard, web, dvd, cd, dat, vinyl, blu-ray
     24bit_behaviour = 0
+    tracker = https://mars.apollo.rip
 
 `username` and `password` are your apollo.rip login credentials. 
 `data_dir` is the directory where your downloads are stored. 
@@ -101,6 +102,7 @@ You should end up with something like this:
     formats = flac, v0, 320
     media = cd, vinyl, web
     24bit_behaviour = 0
+    tracker = https://mars.apollo.rip
 
 Alright! Now you're ready to use apollobetter.
 
@@ -143,4 +145,4 @@ they are lossless types).
 
 Your first time running apollobetter might take a while, but after it has
 successfully gone through and checked everything, it'll go faster any
-consecutive runs due to it's caching method
+consecutive runs due to itss caching method
