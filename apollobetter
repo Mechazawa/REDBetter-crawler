@@ -115,7 +115,7 @@ def main():
             supported_media = whatapi.lossless_media
 
         if not config.has_option('whatcd', 'tracker'):
-            config.set('whatcd', 'tracker', 'https://mars.apollo.rip')
+            config.set('whatcd', 'tracker', 'https://mars.apollo.rip/')
             config.write(open(args.config, 'w'))
             print 'Tracker added to config file'
 
