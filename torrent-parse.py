@@ -35,7 +35,7 @@ def parse_stuff(cache_file):
     cache_new = []
     for torrent in cache:
         if torrent['done']:
-            permalinks.append('"https://what.cd/%s"' % torrent['permalink'])
+            permalinks.append('"https://passtheheadphones.me/%s"' % torrent['permalink'])
         else:
             cache_new.append(torrent)
 
