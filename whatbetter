@@ -115,7 +115,7 @@ def main():
 
     upload_torrent = not args.no_upload
 
-    print 'Logging in to What.CD...'
+    print 'Logging in to PTH...'
     api = whatapi.WhatAPI(username, password)
 
     try:
