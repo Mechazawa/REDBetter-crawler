@@ -30,14 +30,6 @@ If you are on a seedbox, or a system without root priviliages, try this:
     $ pip install --user -r requirements.txt
 
 
-Alternatively, if you have setuptools installed, you can do this (in the
-source directory):
-
-    $ python setup.py install
-
-This should theoretically install all required dependencies
-automatically.
-
 Furthermore, you need several external programs: mktorrent, flac,
 lame, and sox. The method of installing these programs varies
 depending on your operating system, but if you're using something like
