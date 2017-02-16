@@ -64,7 +64,8 @@ like this:
     formats = flac, v0, 320, v2
     media = sacd, soundboard, web, dvd, cd, dat, vinyl, blu-ray
     24bit_behaviour = 0
-    tracker = https://mars.apollo.rip
+    tracker = https://mars.apollo.rip/
+    mode = both
 
 `username` and `password` are your apollo.rip login credentials. 
 `data_dir` is the directory where your downloads are stored. 
@@ -82,6 +83,9 @@ set this to 'cd, vinyl'.
 that it thinks is 24bits. If it is set to '2', every FLAC that has a bits-
 per-sample property of 24 will be silently re-categorized. If it set to '1',
 a prompt will appear. The default is '0' which ignores these occurrences.
+`tracker` is the base url to use in the torrent files.
+`mode` is which list of torrents to search for candidates. One of 'snatched',
+'uploaded' or 'both.'
 
 You should end up with something like this:
 
@@ -94,7 +98,8 @@ You should end up with something like this:
     formats = flac, v0, 320
     media = cd, vinyl, web
     24bit_behaviour = 0
-    tracker = https://mars.apollo.rip
+    tracker = https://mars.apollo.rip/
+    mode = both
 
 Alright! Now you're ready to use apollobetter.
 
@@ -116,12 +121,14 @@ Usage
       --config CONFIG  the location of the configuration file (default:
                        ~/.apollobetter/config)
       --cache CACHE    the location of the cache (default: ~/.apollobetter/cache)
+      -m --mode        mode to search for transcode candidates; snatched, uploaded,
+                       or both
 
 Examples
 --------
 
-To transcode and upload every snatch you've ever downloaded (this may
-take a while):
+To transcode and upload every snatch you've ever downloaded along with all
+your uploads (this may take a while):
 
     $ apollobetter
 

@@ -64,6 +64,7 @@ def main():
     parser.add_argument('-U', '--no-upload', action='store_true', help='don\'t upload new torrents (in case you want to do it manually)')
     parser.add_argument('-E', '--no-24bit-edit', action='store_true', help='don\'t try to edit 24-bit torrents mistakenly labeled as 16-bit')
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
+    parser.add_argument('-m', '--mode', help='mode to search for transcode candidates; snatched, uploaded, or both')
 
     args = parser.parse_args()
 
@@ -84,6 +85,7 @@ def main():
         config.set('whatcd', 'media', ', '.join(whatapi.lossless_media))
         config.set('whatcd', '24bit_behaviour','0')
         config.set('whatcd', 'tracker', 'https://mars.apollo.rip/')
+        config.set('whatcd', 'mode', 'both')
         config.write(open(args.config, 'w'))
         print 'Please edit the configuration file: %s' % args.config
         sys.exit(2)
@@ -118,6 +120,10 @@ def main():
             config.set('whatcd', 'tracker', 'https://mars.apollo.rip/')
             config.write(open(args.config, 'w'))
             print 'Tracker added to config file'
+        if not config.has_option('whatcd', 'mode'):
+            config.set('whatcd', 'mode', 'both')
+            config.write(open(args.config, 'w'))
+            print 'Candidate mode set to both'
 
     upload_torrent = not args.no_upload
 
@@ -142,7 +148,11 @@ def main():
             candidates = [(int(query['id']), int(query['torrentid'])) for query in\
                     [dict(urlparse.parse_qsl(urlparse.urlparse(url).query)) for url in args.release_urls]]
     else:
-        candidates = api.snatched(skip=seen, media=supported_media)
+        if args.mode is None:
+            candidates = api.get_candidates(config.get('whatcd', 'mode'), skip=seen, media=supported_media)
+        else:
+            candidates = api.get_candidates(args.mode, skip=seen, media=supported_media)
+        #candidates = api.snatched(skip=seen, media=supported_media)
 
     for groupid, torrentid in candidates:
         group = api.request('torrentgroup', id=groupid)

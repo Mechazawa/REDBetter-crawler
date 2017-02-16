@@ -149,9 +149,12 @@ class WhatAPI:
         res['torrentgroup'] = keep_releases
         return res
 
-    def snatched(self, skip=None, media=lossless_media):
+    def get_candidates(self, mode, skip=None, media=lossless_media):
         if not media.issubset(lossless_media):
             raise ValueError('Unsupported media type %s' % (media - lossless_media).pop())
+
+        if not any(s == mode for s in ('snatched', 'uploaded', 'both')):
+            raise ValueError('Unsupported candidate mode %s' % mode)
 
         # gazelle doesn't currently support multiple values per query
         # parameter, so we have to search a media type at a time;
@@ -163,18 +166,33 @@ class WhatAPI:
         else:
             media_params = ['&media=%s' % media_search_map[m] for m in media]
 
-        url = 'https://apollo.rip/torrents.php?type=snatched&userid=%s&format=FLAC' % self.userid
-        for mp in media_params:
-            page = 1
-            done = False
-            pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)')
-            while not done:
-                content = self.session.get(url + mp + "&page=%s" % page).text
-                for groupid, torrentid in pattern.findall(content):
-                    if skip is None or torrentid not in skip:
-                        yield int(groupid), int(torrentid)
-                done = 'Next &gt;' not in content
-                page += 1
+        if mode == 'snatched' or mode == 'both':
+            url = 'https://apollo.rip/torrents.php?type=snatched&userid=%s&format=FLAC' % self.userid
+            for mp in media_params:
+                page = 1
+                done = False
+                pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)')
+                while not done:
+                    content = self.session.get(url + mp + "&page=%s" % page).text
+                    for groupid, torrentid in pattern.findall(content):
+                        if skip is None or torrentid not in skip:
+                            yield int(groupid), int(torrentid)
+                    done = 'Next &gt;' not in content
+                    page += 1
+
+        if mode == 'uploaded' or mode == 'both':
+            url = 'https://apollo.rip/torrents.php?type=uploaded&userid=%s&format=FLAC' % self.userid
+            for mp in media_params:
+                page = 1
+                done = False
+                pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)')
+                while not done:
+                    content = self.session.get(url + mp + "&page=%s" % page).text
+                    for groupid, torrentid in pattern.findall(content):
+                        if skip is None or torrentid not in skip:
+                            yield int(groupid), int(torrentid)
+                    done = 'Next &gt;' not in content
+                    page += 1
 
     def upload(self, group, torrent, new_torrent, format, description=[]):
         url = "https://apollo.rip/upload.php?groupid=%s" % group['group']['id']
