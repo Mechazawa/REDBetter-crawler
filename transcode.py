@@ -239,6 +239,8 @@ def get_transcode_dir(flac_dir, output_dir, output_format, resample):
         transcode_dir = re.sub(re.compile('FLAC 24-BIT', re.I), output_format, transcode_dir)
     elif 'FLAC-24BIT' in flac_dir.upper() and ((flac_dir.upper().count('24') >= 2) or (not any(s in flac_dir for s in ('44', '88', '176', '48', '96', '192')))):
         transcode_dir = re.sub(re.compile('FLAC-24BIT', re.I), output_format, transcode_dir)
+    elif 'FLAC-24' in flac_dir.upper() and ((flac_dir.upper().count('24') >= 2) or (not any(s in flac_dir for s in ('44', '88', '176', '48', '96', '192')))):
+        transcode_dir = re.sub(re.compile('FLAC-24', re.I), output_format, transcode_dir)
     elif 'FLAC 24BIT' in flac_dir.upper() and ((flac_dir.upper().count('24') >= 2) or (not any(s in flac_dir for s in ('44', '88', '176', '48', '96', '192')))):
         transcode_dir = re.sub(re.compile('FLAC 24BIT', re.I), output_format, transcode_dir)
     elif 'FLAC 24 BIT' in flac_dir.upper() and ((flac_dir.upper().count('24') >= 2) or (not any(s in flac_dir for s in ('44', '88', '176', '48', '96', '192')))):

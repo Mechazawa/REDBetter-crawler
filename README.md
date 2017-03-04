@@ -5,8 +5,8 @@ apollobetter is a script which automatically transcodes and uploads these
 files to apollo.rip.
 
 The following command will scan through every FLAC you have ever
-downloaded (if it is in , determine which formats are needed, transcode the FLAC to
-each needed format, and upload each format to Apollo -- automatically.
+downloaded or uploaded (if it is in , determine which formats are needed, transcode
+the FLAC to each needed format, and upload each format to Apollo -- automatically.
 
     $ apollobetter
 
