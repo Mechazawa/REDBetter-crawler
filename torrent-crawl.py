@@ -35,7 +35,7 @@ def main():
     password = config.get('whatcd', 'password')
     torrent_dir = os.path.expanduser(config.get('whatcd', 'torrent_dir'))
 
-    print 'Logging in to PTH...'
+    print 'Logging in to RED...'
     api = WhatAPI(username, password)
 
     try:
