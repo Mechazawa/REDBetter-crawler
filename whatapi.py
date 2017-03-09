@@ -220,7 +220,7 @@ class WhatAPI:
         out = []
         for row in data:
             out.append({
-                'permalink': 'torrents.php?id=' + row['torrentId'],
+                'permalink': 'torrents.php?id={}'.format(row['torrentId']),
                 'id': row['torrentId'],
                 'torrent': row['downloadUrl'],
             })
