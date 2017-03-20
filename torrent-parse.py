@@ -42,7 +42,7 @@ def parse_stuff(cache_file):
     if len(permalinks) == 0:
         return False
 
-    cmdline = "python2 whatbetter.py %s" % ' '.join(permalinks)
+    cmdline = "python2 whatbetter %s" % ' '.join(permalinks)
     json.dump(cache_new, open(cache_file, 'wb'))
     print "Executing... " + cmdline
     os.system(cmdline)
