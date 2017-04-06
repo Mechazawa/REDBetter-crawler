@@ -364,7 +364,8 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
     if not os.path.exists(transcode_dir):
         os.makedirs(transcode_dir)
     else:
-        raise TranscodeException('transcode output directory "%s" already exists' % transcode_dir)
+        return transcode_dir
+        #raise TranscodeException('transcode output directory "%s" already exists' % transcode_dir)
 
     # To ensure that a terminated pool subprocess terminates its
     # children, we make each pool subprocess a process group leader,
