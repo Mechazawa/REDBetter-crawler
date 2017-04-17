@@ -229,13 +229,23 @@ def main():
                 print 'Adding format %s...' % format,
                 tmpdir = tempfile.mkdtemp()
                 try:
-                    transcode_dir = transcode.transcode_release(flac_dir, output_dir, format, max_threads=args.threads)
+                    local_output_dir = config.get('whatcd', 'output_dir_{}'.format(format))
+                except:
+                    local_output_dir = output_dir
+
+                try:
+                    local_torrent_dir = config.get('whatcd', 'torrent_dir_{}'.format(format))
+                except:
+                    local_torrent_dir = torrent_dir
+
+                try:
+                    transcode_dir = transcode.transcode_release(flac_dir, local_output_dir, format, max_threads=args.threads)
                     new_torrent = transcode.make_torrent(transcode_dir, tmpdir, config.get('whatcd', 'tracker'), api.passkey)
                     if upload_torrent:
                         permalink = api.permalink(torrent)
                         description = create_description(torrent, flac_dir, format, permalink)
                         api.upload(group, torrent, new_torrent, format, description)
-                    shutil.copy(new_torrent, torrent_dir)
+                    shutil.copy(new_torrent, local_torrent_dir)
                     print "done!"
                     if args.single: break
                 except Exception as e:

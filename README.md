@@ -70,11 +70,12 @@ like this:
 `username` and `password` are your apollo.rip login credentials. 
 `data_dir` is the directory where your downloads are stored. 
 `output_dir` is the directory where your transcodes will be created. If
-the value is blank, `data_dir` will be used.
+the value is blank, `data_dir` will be used. You can also specify
+per format values such as `output_dir_320` or `output_dir_v0`.
 `torrent_dir` is the directory where torrents should be created (e.g.,
-your watch directory). `formats` is a list of formats that you'd like to
-support (so if you don't want to upload V2, just remove it from this
-list).
+your watch directory). Same per format settings as output_dir apply.
+`formats` is a list of formats that you'd like to support
+(so if you don't want to upload V2, just remove it from this list).
 `media` is a list of lossless media types you want to consider for
 transcoding. The default value is all What.CD lossless formats, but if
 you want to transcode only CD and vinyl media, for example, you would
