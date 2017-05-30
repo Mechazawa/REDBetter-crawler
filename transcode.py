@@ -227,6 +227,7 @@ def transcode(flac_file, output_dir, output_format):
     return transcode_file
 
 def get_transcode_dir(flac_dir, output_dir, output_format, resample):
+    full_flac_dir = flac_dir
     transcode_dir = os.path.basename(flac_dir)
     flac_dir = transcode_dir
 
@@ -289,7 +290,7 @@ def get_transcode_dir(flac_dir, output_dir, output_format, resample):
         if output_format != 'FLAC':
             transcode_dir = re.sub(re.compile('FLAC', re.I), '', transcode_dir)
     if resample:
-        rate = resample_rate(flac_dir)
+        rate = resample_rate(full_flac_dir)
         if rate == 44100:
             if '24' in flac_dir and '176.4' in flac_dir:
                 transcode_dir = transcode_dir.replace('24', '16')
