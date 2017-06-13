@@ -65,6 +65,7 @@ like this:
     media = sacd, soundboard, web, dvd, cd, dat, vinyl, blu-ray
     24bit_behaviour = 0
     tracker = https://mars.apollo.rip/
+    api = https://apollo.rip
     mode = both
 
 `username` and `password` are your apollo.rip login credentials. 
@@ -85,8 +86,9 @@ that it thinks is 24bits. If it is set to '2', every FLAC that has a bits-
 per-sample property of 24 will be silently re-categorized. If it set to '1',
 a prompt will appear. The default is '0' which ignores these occurrences.
 `tracker` is the base url to use in the torrent files.
-`mode` is which list of torrents to search for candidates. One of 'snatched',
-'uploaded' or 'both.'
+`api` is the base url to use for api requests.
+`mode` is which list of torrents to search for candidates. One of 'snatched,'
+'uploaded,' 'both,' or 'none' to disable scraping.
 
 You should end up with something like this:
 
@@ -100,6 +102,7 @@ You should end up with something like this:
     media = cd, vinyl, web
     24bit_behaviour = 0
     tracker = https://mars.apollo.rip/
+    api = https://apollo.rip
     mode = both
 
 Alright! Now you're ready to use apollobetter.
@@ -124,6 +127,11 @@ Usage
       --cache CACHE    the location of the cache (default: ~/.apollobetter/cache)
       -m --mode        mode to search for transcode candidates; snatched, uploaded,
                        or both
+
+Notes
+-----
+
+If you're running it on RED, turn mode to none to avoid getting banned.
 
 Examples
 --------
