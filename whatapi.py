@@ -53,6 +53,8 @@ formats = {
     },
 }
 
+endpoint = 'https://apollo.rip/'
+
 def allowed_transcodes(torrent):
     """Some torrent types have transcoding restrictions."""
     preemphasis = re.search(r"""pre[- ]?emphasi(s(ed)?|zed)""", torrent['remasterTitle'], flags=re.IGNORECASE)
@@ -68,11 +70,15 @@ class RequestException(Exception):
     pass
 
 class WhatAPI:
-    def __init__(self, username=None, password=None):
+    def __init__(self, username=None, password=None, endpoint=None):
         self.session = requests.Session()
         self.session.headers.update(headers)
         self.username = username
         self.password = password
+        if endpoint:
+            self.endpoint = endpoint
+        else:
+            self.endpoint = 'https://apollo.rip'
         self.authkey = None
         self.passkey = None
         self.userid = None
@@ -82,7 +88,7 @@ class WhatAPI:
 
     def _login(self):
         '''Logs in user and gets authkey from server'''
-        loginpage = 'https://apollo.rip/login.php'
+        loginpage = '{}/login.php'.format(self.endpoint)
         data = {'username': self.username,
                 'password': self.password}
         r = self.session.post(loginpage, data=data)
@@ -94,14 +100,14 @@ class WhatAPI:
         self.userid = accountinfo['id']
 
     def logout(self):
-        self.session.get("https://apollo.rip/logout.php?auth=%s" % self.authkey)
+        self.session.get('{}/logout.php?auth={}'.format(self.endpoint, self.authkey))
 
     def request(self, action, **kwargs):
         '''Makes an AJAX request at a given action page'''
         while time.time() - self.last_request < self.rate_limit:
             time.sleep(0.1)
 
-        ajaxpage = 'https://apollo.rip/ajax.php'
+        ajaxpage = '{}/ajax.php'.format(endpoint)
         params = {'action': action}
         if self.authkey:
             params['auth'] = self.authkey
@@ -120,7 +126,7 @@ class WhatAPI:
         while time.time() - self.last_request < self.rate_limit:
             time.sleep(0.1)
 
-        ajaxpage = 'https://apollo.rip/' + action
+        ajaxpage = '{}action'.format(eself.endpoint)
         if self.authkey:
             kwargs['auth'] = self.authkey
         r = self.session.get(ajaxpage, params=kwargs, allow_redirects=False)
@@ -167,7 +173,7 @@ class WhatAPI:
             media_params = ['&media=%s' % media_search_map[m] for m in media]
 
         if mode == 'snatched' or mode == 'both':
-            url = 'https://apollo.rip/torrents.php?type=snatched&userid=%s&format=FLAC' % self.userid
+            url = '{}/torrents.php?type=snatched&userid={}&format=FLAC'.format(self.endpoint, self.userid)
             for mp in media_params:
                 page = 1
                 done = False
@@ -181,7 +187,7 @@ class WhatAPI:
                     page += 1
 
         if mode == 'uploaded' or mode == 'both':
-            url = 'https://apollo.rip/torrents.php?type=uploaded&userid=%s&format=FLAC' % self.userid
+            url = '{}/torrents.php?type=uploaded&userid={}&format=FLAC'.format(self.endpoint, self.userid)
             for mp in media_params:
                 page = 1
                 done = False
@@ -195,7 +201,7 @@ class WhatAPI:
                     page += 1
 
     def upload(self, group, torrent, new_torrent, format, description=[]):
-        url = "https://apollo.rip/upload.php?groupid=%s" % group['group']['id']
+        url = '{}/upload.php?groupid={}'.format(self.endpoint, group['group']['id'])
         response = self.session.get(url)
         forms = mechanize.ParseFile(StringIO(response.text.encode('utf-8')), url)
         form = forms[-1]
@@ -219,7 +225,7 @@ class WhatAPI:
         return self.session.post(url, data=data, headers=dict(headers))
 
     def set_24bit(self, torrent):
-        url = "https://apollo.rip/torrents.php?action=edit&id=%s" % torrent['id']
+        url = '{}/torrents.php?action=edit&id={}'.format(self.endpoint, torrent['id'])
         response = self.session.get(url)
         forms = mechanize.ParseFile(StringIO(response.text.encode('utf-8')), url)
         form = forms[-3]
@@ -228,10 +234,10 @@ class WhatAPI:
         return self.session.post(url, data=data, headers=dict(headers))
 
     def release_url(self, group, torrent):
-        return "https://apollo.rip/torrents.php?id=%s&torrentid=%s#torrent%s" % (group['group']['id'], torrent['id'], torrent['id'])
+        return '{}/torrents.php?id={}&torrentid={}#torrent{}'.format(self.endpoint, group['group']['id'], torrent['id'], torrent['id'])
 
     def permalink(self, torrent):
-        return "https://apollo.rip/torrents.php?torrentid=%s" % torrent['id']
+        return '{}/torrents.php?torrentid={}'.format(self.endpoint, torrent['id'])
 
     def get_better(self, type=3):
         p = re.compile(ur'(torrents\.php\?action=download&(?:amp;)?id=(\d+)[^"]*).*(torrents\.php\?id=\d+(?:&amp;|&)torrentid=\2\#torrent\d+)', re.DOTALL)
@@ -250,7 +256,7 @@ class WhatAPI:
         while time.time() - self.last_request < self.rate_limit:
             time.sleep(0.1)
 
-        torrentpage = 'https://apollo.rip/torrents.php'
+        torrentpage = '{}/torrents.php'.format(self.endpoint)
         params = {'action': 'download', 'id': torrent_id}
         if self.authkey:
             params['authkey'] = self.authkey
