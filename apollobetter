@@ -160,8 +160,8 @@ def main():
             if mode == 'none':
                 print 'No urls provided and scraping is disabled'
             else:
-                candidates = api.get_candidates(mode), skip=seen, media=supported_media)
-        elif args.mode = 'none':
+                candidates = api.get_candidates(mode, skip=seen, media=supported_media)
+        elif args.mode == 'none':
             print 'No urls provided and scraping is disabled'
         else:
             candidates = api.get_candidates(args.mode, skip=seen, media=supported_media)
