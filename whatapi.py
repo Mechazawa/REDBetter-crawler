@@ -212,6 +212,11 @@ class WhatAPI:
             form['remaster_title'] = torrent['remasterTitle']
             form['remaster_record_label'] = torrent['remasterRecordLabel']
             form['remaster_catalogue_number'] = torrent['remasterCatalogueNumber']
+        else:
+            form['remaster_year'] = ''
+            form['remaster_title'] = ''
+            form['remaster_record_label'] = ''
+            form['remaster_catalogue_number'] = ''
 
         form.find_control('format').set('1', formats[format]['format'])
         form.find_control('bitrate').set('1', formats[format]['encoding'])
