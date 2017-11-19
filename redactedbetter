@@ -80,7 +80,7 @@ def main():
         config.set('redacted', 'data_dir', '')
         config.set('redacted', 'output_dir', '')
         config.set('redacted', 'torrent_dir', '')
-        config.set('redacted', 'formats', 'flac, v0, 320, v2')
+        config.set('redacted', 'formats', 'flac, v0, 320')
         config.set('redacted', 'media', ', '.join(redactedapi.lossless_media))
         config.set('redacted', '24bit_behaviour','0')
         config.write(open(args.config, 'w'))
