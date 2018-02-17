@@ -65,6 +65,7 @@ def main():
     parser.add_argument('-E', '--no-24bit-edit', action='store_true', help='don\'t try to edit 24-bit torrents mistakenly labeled as 16-bit')
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
     parser.add_argument('-m', '--mode', help='mode to search for transcode candidates; snatched, uploaded, or both')
+    parser.add_argument('-S', '--skip', action='store_true', help="treats a torrent as already processed")
 
     args = parser.parse_args()
 
@@ -143,6 +144,17 @@ def main():
     except:
         seen = set()
         pickle.dump(seen, open(args.cache, 'wb'))
+
+    if args.skip:
+        skip = [int(query['torrentid']) for query in\
+                [dict(urlparse.parse_qsl(urlparse.urlparse(url).query)) for url in args.release_urls]]
+        for id in skip:
+            print("Skipping torrent {}".format(str(id)))
+            seen.add(str(id))
+        pickle.dump(seen, open(args.cache, 'wb'))
+        return
+
+
 
     print 'Searching for transcode candidates...'
     if args.release_urls:
