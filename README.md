@@ -110,23 +110,33 @@ Alright! Now you're ready to use apollobetter.
 Usage
 -----
 
-    usage: apollobetter [-h] [-s] [--config CONFIG] [--cache CACHE]
-                        [release_urls [release_urls ...]]
+```
+usage: apollobetter [-h] [-s] [-j THREADS] [--config CONFIG] [--cache CACHE]
+                    [-U] [-E] [--version] [-m MODE] [-S]
+                    [release_urls [release_urls ...]]
 
-    positional arguments:
-      release_urls     the URL where the release is located, if only one url is
-                       specified and is a file it is instead loaded as a list of
-                       urls
+positional arguments:
+  release_urls          the URL where the release is located (default: None)
 
-    optional arguments:
-      -h, --help       show this help message and exit
-      -s, --single     only add one format per release (useful for getting unique
-                       groups)
-      --config CONFIG  the location of the configuration file (default:
-                       ~/.apollobetter/config)
-      --cache CACHE    the location of the cache (default: ~/.apollobetter/cache)
-      -m --mode        mode to search for transcode candidates; snatched, uploaded,
-                       or both
+optional arguments:
+  -h, --help            show this help message and exit
+  -s, --single          only add one format per release (useful for getting
+                        unique groups) (default: False)
+  -j THREADS, --threads THREADS
+                        number of threads to use when transcoding (default: 3)
+  --config CONFIG       the location of the configuration file (default:
+                        /home/rtorrent/.apollobetter/config)
+  --cache CACHE         the location of the cache (default:
+                        /home/rtorrent/.apollobetter/cache)
+  -U, --no-upload       don't upload new torrents (in case you want to do it
+                        manually) (default: False)
+  -E, --no-24bit-edit   don't try to edit 24-bit torrents mistakenly labeled
+                        as 16-bit (default: False)
+  --version             show program's version number and exit
+  -m MODE, --mode MODE  mode to search for transcode candidates; snatched,
+                        uploaded, or both (default: None)
+  -S, --skip            treats a torrent as already processed (default: False)
+```
 
 Notes
 -----
