@@ -125,9 +125,9 @@ optional arguments:
   -j THREADS, --threads THREADS
                         number of threads to use when transcoding (default: 3)
   --config CONFIG       the location of the configuration file (default:
-                        /home/rtorrent/.apollobetter/config)
+                        ~/.apollobetter/config)
   --cache CACHE         the location of the cache (default:
-                        /home/rtorrent/.apollobetter/cache)
+                        ~/.apollobetter/cache)
   -U, --no-upload       don't upload new torrents (in case you want to do it
                         manually) (default: False)
   -E, --no-24bit-edit   don't try to edit 24-bit torrents mistakenly labeled
