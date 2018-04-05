@@ -64,7 +64,7 @@ def main():
     parser.add_argument('-U', '--no-upload', action='store_true', help='don\'t upload new torrents (in case you want to do it manually)')
     parser.add_argument('-E', '--no-24bit-edit', action='store_true', help='don\'t try to edit 24-bit torrents mistakenly labeled as 16-bit')
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
-    parser.add_argument('-m', '--mode', help='mode to search for transcode candidates; snatched, uploaded, or both')
+    parser.add_argument('-m', '--mode', help='mode to search for transcode candidates; snatched, uploaded, both, seeding, or all')
     parser.add_argument('-S', '--skip', action='store_true', help="treats a torrent as already processed")
 
     args = parser.parse_args()

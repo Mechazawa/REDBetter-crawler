@@ -69,26 +69,41 @@ like this:
     mode = both
 
 `username` and `password` are your apollo.rip login credentials. 
+
 `data_dir` is the directory where your downloads are stored. 
+
 `output_dir` is the directory where your transcodes will be created. If
 the value is blank, `data_dir` will be used. You can also specify
 per format values such as `output_dir_320` or `output_dir_v0`.
+
 `torrent_dir` is the directory where torrents should be created (e.g.,
 your watch directory). Same per format settings as output_dir apply.
+
 `formats` is a list of formats that you'd like to support
 (so if you don't want to upload V2, just remove it from this list).
+
 `media` is a list of lossless media types you want to consider for
 transcoding. The default value is all What.CD lossless formats, but if
 you want to transcode only CD and vinyl media, for example, you would
 set this to 'cd, vinyl'.
+
 `24bit_behaviour` defines what happens when the program encounters a FLAC 
 that it thinks is 24bits. If it is set to '2', every FLAC that has a bits-
 per-sample property of 24 will be silently re-categorized. If it set to '1',
 a prompt will appear. The default is '0' which ignores these occurrences.
+
 `tracker` is the base url to use in the torrent files.
+
 `api` is the base url to use for api requests.
-`mode` is which list of torrents to search for candidates. One of 'snatched,'
-'uploaded,' 'both,' or 'none' to disable scraping.
+
+`mode` is which list of torrents to search for candidates. One of:
+
+ - `snatched` - Your snatched torrents.
+ - `uploaded` - Your uploaded torrents.
+ - `both`     - Your uploaded and snatched torrents.
+ - `seeding`  - Better.php for your seeding torrents.
+ - `all`      - All transcode sources above.
+ - `none`     - Disable scraping.
 
 You should end up with something like this:
 
@@ -123,7 +138,7 @@ optional arguments:
   -s, --single          only add one format per release (useful for getting
                         unique groups) (default: False)
   -j THREADS, --threads THREADS
-                        number of threads to use when transcoding (default: 3)
+                        number of threads to use when transcoding (default: 7)
   --config CONFIG       the location of the configuration file (default:
                         ~/.apollobetter/config)
   --cache CACHE         the location of the cache (default:
@@ -134,7 +149,7 @@ optional arguments:
                         as 16-bit (default: False)
   --version             show program's version number and exit
   -m MODE, --mode MODE  mode to search for transcode candidates; snatched,
-                        uploaded, or both (default: None)
+                        uploaded, both, seeding, or all (default: None)
   -S, --skip            treats a torrent as already processed (default: False)
 ```
 
