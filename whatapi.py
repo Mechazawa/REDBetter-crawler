@@ -159,8 +159,8 @@ class WhatAPI:
         if not media.issubset(lossless_media):
             raise ValueError('Unsupported media type %s' % (media - lossless_media).pop())
 
-        if not any(s == mode for s in ('snatched', 'uploaded', 'both')):
-            raise ValueError('Unsupported candidate mode %s' % mode)
+        if not any(s == mode for s in ('snatched', 'uploaded', 'both', 'all', 'seeding')):
+            raise ValueError('Unsupported candidate mode {0}'.format(mode))
 
         # gazelle doesn't currently support multiple values per query
         # parameter, so we have to search a media type at a time;
@@ -172,7 +172,7 @@ class WhatAPI:
         else:
             media_params = ['&media=%s' % media_search_map[m] for m in media]
 
-        if mode == 'snatched' or mode == 'both':
+        if mode == 'snatched' or mode == 'both' or mode == 'all':
             url = '{}/torrents.php?type=snatched&userid={}&format=FLAC'.format(self.endpoint, self.userid)
             for mp in media_params:
                 page = 1
@@ -186,7 +186,7 @@ class WhatAPI:
                     done = 'Next &gt;' not in content
                     page += 1
 
-        if mode == 'uploaded' or mode == 'both':
+        if mode == 'uploaded' or mode == 'both' or mode == 'all':
             url = '{}/torrents.php?type=uploaded&userid={}&format=FLAC'.format(self.endpoint, self.userid)
             for mp in media_params:
                 page = 1
@@ -199,6 +199,14 @@ class WhatAPI:
                             yield int(groupid), int(torrentid)
                     done = 'Next &gt;' not in content
                     page += 1
+
+        if mode == 'seeding' or mode == 'all':
+            url = '{}/better.php?method=snatch&filter=seeding'.format(self.endpoint)
+            pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)#torrent\d+')
+            content = self.session.get(url).text
+            for groupid, torrentid in pattern.findall(content):
+                if skip is None or torrentid not in skip:
+                    yield int(groupid), int(torrentid)
 
     def upload(self, group, torrent, new_torrent, format, description=[]):
         url = '{}/upload.php?groupid={}'.format(self.endpoint, group['group']['id'])
