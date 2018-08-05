@@ -16,7 +16,8 @@ Installation
 You're going to need to install a few dependencies before using
 apollobetter.
 
-First and foremost, you will need Python 2.7 or newer.
+First and foremost, you will need Python 2.7 or newer. Will not run on Python 3
+as requests is only available for Python 2.x.
 
 Once you've got Python installed, you will need a few modules: mechanize,
 mutagen, and requests. Try this:
@@ -30,7 +31,7 @@ If you are on a seedbox, or a system without root priviliages, try this:
     $ pip install --user -r requirements.txt
 
 
-Furthermore, you need several external programs: mktorrent, flac,
+Furthermore, you need several external programs: mktorrent 1.1+, flac,
 lame, and sox. The method of installing these programs varies
 depending on your operating system, but if you're using something like
 Ubuntu you can do this:
@@ -178,4 +179,4 @@ they are lossless types).
 
 Your first time running apollobetter might take a while, but after it has
 successfully gone through and checked everything, it'll go faster any
-consecutive runs due to itss caching method
+consecutive runs due to its caching method
