@@ -53,8 +53,6 @@ formats = {
     },
 }
 
-endpoint = 'https://apollo.rip/'
-
 def allowed_transcodes(torrent):
     """Some torrent types have transcoding restrictions."""
     preemphasis = re.search(r"""pre[- ]?emphasi(s(ed)?|zed)""", torrent['remasterTitle'], flags=re.IGNORECASE)
@@ -78,7 +76,7 @@ class WhatAPI:
         if endpoint:
             self.endpoint = endpoint
         else:
-            self.endpoint = 'https://apollo.rip'
+            self.endpoint = 'https://orpheus.network'
         self.authkey = None
         self.passkey = None
         self.userid = None
@@ -107,7 +105,7 @@ class WhatAPI:
         while time.time() - self.last_request < self.rate_limit:
             time.sleep(0.1)
 
-        ajaxpage = '{}/ajax.php'.format(endpoint)
+        ajaxpage = '{}/ajax.php'.format(self.endpoint)
         params = {'action': action}
         if self.authkey:
             params['auth'] = self.authkey
@@ -126,7 +124,7 @@ class WhatAPI:
         while time.time() - self.last_request < self.rate_limit:
             time.sleep(0.1)
 
-        ajaxpage = '{}action'.format(eself.endpoint)
+        ajaxpage = '{}action'.format(self.endpoint)
         if self.authkey:
             kwargs['auth'] = self.authkey
         r = self.session.get(ajaxpage, params=kwargs, allow_redirects=False)

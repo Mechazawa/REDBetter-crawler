@@ -1,20 +1,20 @@
 Introduction
 ------------
 
-apollobetter is a script which automatically transcodes and uploads these
-files to apollo.rip.
+orpheusbetter is a script which automatically transcodes and uploads these
+files to Orpheus.
 
 The following command will scan through every FLAC you have ever
 downloaded or uploaded (if it is in , determine which formats are needed, transcode
 the FLAC to each needed format, and upload each format to Apollo -- automatically.
 
-    $ apollobetter
+    $ orpheusbetter
 
 Installation
 ------------
 
 You're going to need to install a few dependencies before using
-apollobetter.
+orpheusbetter.
 
 First and foremost, you will need Python 2.7 or newer. Will not run on Python 3
 as requests is only available for Python 2.x.
@@ -44,16 +44,16 @@ you could contact your provider to have these packages installed.
 
 At this point you may execute the following command:
 
-    $ apollobetter
+    $ orpheusbetter
 
 And you will receive a notification stating that you should edit the
-configuration file \~/.apollobetter/config (if you're lucky).
+configuration file \~/.orpheusbetter/config (if you're lucky).
 
 Configuration
 -------------
 
 You've made it far! Congratulations. Open up the file
-\~/.apollobetter/config in a text editor. You're going to see something
+\~/.orpheusbetter/config in a text editor. You're going to see something
 like this:
 
     [whatcd]
@@ -65,11 +65,11 @@ like this:
     formats = flac, v0, 320, v2
     media = sacd, soundboard, web, dvd, cd, dat, vinyl, blu-ray
     24bit_behaviour = 0
-    tracker = https://mars.apollo.rip/
-    api = https://apollo.rip
+    tracker = https://home.opsfet.ch/
+    api = https://orpheus.network
     mode = both
 
-`username` and `password` are your apollo.rip login credentials. 
+`username` and `password` are your Orpheus login credentials. 
 
 `data_dir` is the directory where your downloads are stored. 
 
@@ -117,17 +117,17 @@ You should end up with something like this:
     formats = flac, v0, 320
     media = cd, vinyl, web
     24bit_behaviour = 0
-    tracker = https://mars.apollo.rip/
-    api = https://apollo.rip
+    tracker = https://home.opsfet.ch/
+    api = https://orpheus.network
     mode = both
 
-Alright! Now you're ready to use apollobetter.
+Alright! Now you're ready to use orpheusbetter.
 
 Usage
 -----
 
 ```
-usage: apollobetter [-h] [-s] [-j THREADS] [--config CONFIG] [--cache CACHE]
+usage: orpheusbetter [-h] [-s] [-j THREADS] [--config CONFIG] [--cache CACHE]
                     [-U] [-E] [--version] [-m MODE] [-S]
                     [release_urls [release_urls ...]]
 
@@ -141,9 +141,9 @@ optional arguments:
   -j THREADS, --threads THREADS
                         number of threads to use when transcoding (default: 7)
   --config CONFIG       the location of the configuration file (default:
-                        ~/.apollobetter/config)
+                        ~/.orpheusbetter/config)
   --cache CACHE         the location of the cache (default:
-                        ~/.apollobetter/cache)
+                        ~/.orpheusbetter/cache)
   -U, --no-upload       don't upload new torrents (in case you want to do it
                         manually) (default: False)
   -E, --no-24bit-edit   don't try to edit 24-bit torrents mistakenly labeled
@@ -154,29 +154,24 @@ optional arguments:
   -S, --skip            treats a torrent as already processed (default: False)
 ```
 
-Notes
------
-
-If you're running it on RED, turn mode to none to avoid getting banned.
-
 Examples
 --------
 
 To transcode and upload every snatch you've ever downloaded along with all
 your uploads (this may take a while):
 
-    $ apollobetter
+    $ orpheusbetter
 
 To transcode and upload a specific release (provided you have already
 downloaded the FLAC and it is located in your `data_dir`):
 
-    $ apollobetter http://apollo.rip/torrents.php?id=1000\&torrentid=1000000
+    $ orpheusbetter https://orpheus.network/torrents.php?id=1000\&torrentid=1000000
 
-Note that if you specify a particular release(s), apollobetter will
+Note that if you specify a particular release(s), orpheusbetter will
 ignore your configuration's media types and attempt to transcode the
 releases you have specified regardless of their media type (so long as
 they are lossless types).
 
-Your first time running apollobetter might take a while, but after it has
+Your first time running orpheusbetter might take a while, but after it has
 successfully gone through and checked everything, it'll go faster any
 consecutive runs due to its caching method

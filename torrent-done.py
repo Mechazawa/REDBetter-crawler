@@ -8,11 +8,11 @@ def main():
     torrent_hash = argv[5].upper()
 
     # find the hash and set done = true
-    cache = json.load(open('~/.apollobetter/cache-crawl'))
+    cache = json.load(open('~/.orpheusbetter/cache-crawl'))
     for torrent in cache:
         if torrent['hash'] == torrent_hash:
             torrent['done'] = True
-            json.dump(cache, open('~/.apollobetter/cache-crawl', 'wb'))
+            json.dump(cache, open('~/.orpheusbetter/cache-crawl', 'wb'))
             exit(0)
 
     exit(1)
