@@ -7,7 +7,7 @@ import shutil
 import sys
 import tempfile
 import traceback
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qsl
 from multiprocessing import cpu_count
 
 import tagging
@@ -148,7 +148,7 @@ def main():
 
     if args.skip:
         skip = [int(query['torrentid']) for query in\
-                [dict(urlparse.parse_qsl(urlparse.urlparse(url).query)) for url in args.release_urls]]
+                [dict(parse_qsl(urlparse(url).query)) for url in args.release_urls]]
         for id in skip:
             print("Skipping torrent {0}".format(str(id)))
             seen.add(str(id))
@@ -163,11 +163,11 @@ def main():
             print("You supplied a url list, ignoring your configuration's media types.")
             with open(args.release_urls[0]) as f:
                 candidates = [(int(query['id']), int(query['torrentid'])) for query in\
-                        [dict(urlparse.parse_qsl(urlparse.urlparse(url).query)) for url in f]]
+                        [dict(parse_qsl(urlparse(url).query)) for url in f]]
         else:
             print("You supplied one or more release URLs, ignoring your configuration's media types.")
             candidates = [(int(query['id']), int(query['torrentid'])) for query in\
-                    [dict(urlparse.parse_qsl(urlparse.urlparse(url).query)) for url in args.release_urls]]
+                    [dict(parse_qsl(urlparse(url).query)) for url in args.release_urls]]
     else:
         if args.mode is None:
             if mode == 'none':
