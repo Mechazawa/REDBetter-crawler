@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import errno
 import multiprocessing
 import os
@@ -129,12 +129,12 @@ def transcode_commands(output_format, resample, needed_sample_rate, flac_file, t
     resampling, if needed.
     '''
     if resample:
-        flac_decoder = 'sox %(FLAC)s -G -b 16 -t wav - rate -v -L %(SAMPLERATE)s dither'
+        flac_decoder = 'sox {FLAC} -G -b 16 -t wav - rate -v -L {SAMPLERATE} dither'
     else:
-        flac_decoder = 'flac -dcs -- %(FLAC)s'
+        flac_decoder = 'flac -dcs -- {FLAC}'
 
-    lame_encoder = 'lame -S %(OPTS)s - %(FILE)s'
-    flac_encoder = 'flac %(OPTS)s -o %(FILE)s -'
+    lame_encoder = 'lame -S {OPTS} - {FILE}'
+    flac_encoder = 'flac {OPTS} -o {FILE} -'
 
     transcoding_steps = [flac_decoder]
 
@@ -151,14 +151,14 @@ def transcode_commands(output_format, resample, needed_sample_rate, flac_file, t
     }
 
     if output_format == 'FLAC' and resample:
-        commands = ['sox %(FLAC)s -G -b 16 %(FILE)s rate -v -L %(SAMPLERATE)s dither' % transcode_args]
+        commands = ['sox {FLAC} -G -b 16 {FILE} rate -v -L {SAMPLERATE} dither'.format(**transcode_args)]
     else:
-        commands = map(lambda cmd: cmd % transcode_args, transcoding_steps)
+        commands = map(lambda cmd: cmd.format(**transcode_args), transcoding_steps)
     return commands
 
 # Pool.map() can't pickle lambdas, so we need a helper function.
-def pool_transcode((flac_file, output_dir, output_format)):
-    return transcode(flac_file, output_dir, output_format)
+def pool_transcode(args):
+    return transcode(*args)
 
 def transcode(flac_file, output_dir, output_format):
     '''
@@ -179,10 +179,10 @@ def transcode(flac_file, output_dir, output_format):
         elif sample_rate % 48000 == 0:
             needed_sample_rate = '48000'
         else:
-            raise UnknownSampleRateException('FLAC file "{0}" has a sample rate {1}, which is not 88.2 , 176.4 or 96kHz but needs resampling, this is unsupported'.format(flac_file, sample_rate))
+            raise UnknownSampleRateException('FLAC file "{0}" has a sample rate {1}, which is not 88.2, 176.4, 96, or 192kHz but needs resampling, this is unsupported'.format(flac_file, sample_rate))
 
     if flac_info.info.channels > 2:
-        raise TranscodeDownmixException('FLAC file "%s" has more than 2 channels, unsupported' % flac_file)
+        raise TranscodeDownmixException('FLAC file "{0}" has more than 2 channels, unsupported'.format(flac_file))
 
     # determine the new filename
     transcode_basename = os.path.splitext(os.path.basename(flac_file))[0]
@@ -201,7 +201,7 @@ def transcode(flac_file, output_dir, output_format):
             else:
                 raise e
 
-    commands = transcode_commands(output_format, resample, needed_sample_rate, flac_file, transcode_file)
+    commands = list(transcode_commands(output_format, resample, needed_sample_rate, flac_file, transcode_file))
     results = run_pipeline(commands)
 
     # Check for problems. Because it's a pipeline, the earliest one is
@@ -214,15 +214,15 @@ def transcode(flac_file, output_dir, output_format):
             if code == -signal.SIGPIPE:
                 last_sigpipe = (cmd, (code, stderr))
             else:
-                raise TranscodeException('Transcode of file "%s" failed: %s' % (flac_file, stderr))
+                raise TranscodeException('Transcode of file "{0}" failed: {1}'.format(flac_file, stderr))
     if last_sigpipe:
         # XXX: this should probably never happen....
-        raise TranscodeException('Transcode of file "%s" failed: SIGPIPE' % flac_file)
+        raise TranscodeException('Transcode of file "{0}" failed: SIGPIPE'.format(flac_file))
 
     tagging.copy_tags(flac_file, transcode_file)
     (ok, msg) = tagging.check_tags(transcode_file)
     if not ok:
-        raise TranscodeException('Tag check failed on transcoded file: %s' % msg)
+        raise TranscodeException('Tag check failed on transcoded file: {0}'.format(msg))
 
     return transcode_file
 
@@ -352,7 +352,7 @@ def transcode_release(flac_dir, output_dir, output_format, max_threads=None):
         # XXX: if output_dir is not the same as flac_dir, this may not
         # do what the user expects.
         if output_dir != os.path.dirname(flac_dir):
-            print "Warning: no encode necessary, so files won't be placed in", output_dir
+            print("Warning: no encode necessary, so files won't be placed in", output_dir)
         return flac_dir
 
     # make a new directory for the transcoded files
@@ -430,10 +430,8 @@ def make_torrent(input_dir, output_dir, tracker, passkey):
     torrent = os.path.join(output_dir, os.path.basename(input_dir)) + ".torrent"
     if not os.path.exists(os.path.dirname(torrent)):
         os.path.makedirs(os.path.dirname(torrent))
-    tracker_url = '%(tracker)s%(passkey)s/announce' % {
-        'tracker' : tracker,
-        'passkey' : passkey,
-    }
+    tracker_url = '{tracker}{passkey}/announce'.format(
+        tracker=tracker, passkey=passkey)
     command = ["mktorrent", "-p", "-s", "OPS", "-a", tracker_url, "-o", torrent, input_dir]
     subprocess.check_output(command, stderr=subprocess.STDOUT)
     return torrent

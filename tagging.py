@@ -114,7 +114,7 @@ def copy_tags(flac_file, transcode_file):
 
     for tag in filter(valid_key_fn, flac_info):
         # scrub the FLAC tags, just to be on the safe side.
-        values = map(lambda v: scrub_tag(tag,v), flac_info[tag])
+        values = list(map(lambda v: scrub_tag(tag,v), flac_info[tag]))
         if values and values != [u'']:
             transcode_info[tag] = values
 
@@ -158,7 +158,7 @@ for key, frameid in {
     'album artist': 'TPE2',
     'grouping': 'TIT1',
     'content group': 'TIT1',
-    }.iteritems():
+    }.items():
     EasyID3.RegisterTextKey(key, frameid)
 
 def comment_get(id3, _):

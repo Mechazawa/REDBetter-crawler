@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 # make me a conjob!
 
 import os
@@ -12,7 +12,7 @@ lockfile = os.path.expanduser('~/.orpheusbetter/parse.lock')
 
 def main():
     if os.path.exists(lockfile):
-        print "Found lockfile, exiting...."
+        print("Found lockfile, exiting....")
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, prog='orpheusbetter')
     parser.add_argument('--cache', help='the location of the cache',
@@ -20,7 +20,7 @@ def main():
 
     args = parser.parse_args()
     while parse_stuff(args.cache) and not os.path.exists(lockfile):
-        print "Done encoding cycle"
+        print("Done encoding cycle")
 
 
 def parse_stuff(cache_file):
@@ -35,16 +35,16 @@ def parse_stuff(cache_file):
     cache_new = []
     for torrent in cache:
         if torrent['done']:
-            permalinks.append('"https://orpheus.network/%s"' % torrent['permalink'])
+            permalinks.append('"https://orpheus.network/{0}"'.format(torrent['permalink']))
         else:
             cache_new.append(torrent)
 
     if len(permalinks) == 0:
         return False
 
-    cmdline = "python2 orpheusbetter.py %s" % ' '.join(permalinks)
+    cmdline = "python3 orpheusbetter.py {0}".format(' '.join(permalinks))
     json.dump(cache_new, open(cache_file, 'wb'))
-    print "Executing... " + cmdline
+    print("Executing... {0}".format(cmdline))
     os.system(cmdline)
     os.remove(lockfile)
     return True

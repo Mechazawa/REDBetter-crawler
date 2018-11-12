@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import sys
 import os
@@ -28,14 +28,14 @@ def main():
         open(args.config)
         config.read(args.config)
     except:
-        print "please run orpheusbetter once"
+        print("Please run orpheusbetter once")
         sys.exit(2)
 
     username = config.get('whatcd', 'username')
     password = config.get('whatcd', 'password')
     torrent_dir = os.path.expanduser(config.get('whatcd', 'torrent_dir'))
 
-    print 'Logging in to What.CD...'
+    print("Logging in to Orpheus Network...")
     api = WhatAPI(username, password)
 
     try:
@@ -45,17 +45,17 @@ def main():
         json.dump(cache, open(args.cache, 'wb'))
 
     while len(cache) < args.count:
-        print 'Refreshing better.php and finding %i candidates' % (args.count - len(cache))
+        print("Refreshing better.php and finding {0} candidates".format(args.count - len(cache)))
         for torrent in api.get_better(args.better):
             if len(cache) >= args.count:
                 break
 
-            print "Testing #%i" % torrent['id']
+            print("Testing #{0}".format(torrent['id']))
             info = api.get_torrent_info(torrent['id'])
             if info['snatched'] < args.snatches:
                 continue
 
-            print "Fetching #%i with %i snatches" % (torrent['id'], info['snatched'])
+            print("Fetching #{0} with {1} snatches".format(torrent['id'], info['snatched']))
 
             with open(os.path.join(torrent_dir, '%i.torrent' % torrent['id']), 'wb') as f:
                 f.write(api.get_torrent(torrent['id']))
@@ -67,7 +67,7 @@ def main():
             cache.append(torrent)
             json.dump(cache, open(args.cache, 'wb'))
 
-    print 'Nothing left to do'
+    print("Nothing left to do")
 
 if __name__ == '__main__':
     main()
