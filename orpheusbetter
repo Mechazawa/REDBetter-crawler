@@ -70,7 +70,7 @@ def main():
 
     args = parser.parse_args()
 
-    config = configparser.SafeConfigParser(interpolation=None)
+    config = configparser.ConfigParser(interpolation=None)
     try:
         open(args.config)
         config.read(args.config)
@@ -99,7 +99,7 @@ def main():
         data_dir = os.path.expanduser(config.get('orpheus', 'data_dir'))
         try:
             output_dir = os.path.expanduser(config.get('orpheus', 'output_dir'))
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             output_dir = None
         if not output_dir:
             output_dir = data_dir
@@ -116,7 +116,7 @@ def main():
                     print('Unsupported media type "{0}", edit your configuration'.format((supported_media - whatapi.lossless_media).pop()))
                     print("Supported types are: {0}".format(', '.join(whatapi.lossless_media)))
                     sys.exit(2)
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             supported_media = whatapi.lossless_media
 
         if not config.has_option('orpheus', 'tracker'):
