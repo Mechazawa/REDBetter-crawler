@@ -209,7 +209,6 @@ class WhatAPI:
         url = '{0}/upload.php?groupid={1}'.format(self.endpoint, group['group']['id'])
         self.session.open(url)
         form = self.session.select_form(selector='.create_form')
-        #form.find_control('file_input').add_file(open(new_torrent), 'application/x-bittorrent', os.path.basename(new_torrent))
         form['file_input'] = new_torrent
         if torrent['remastered']:
             form['remaster'] = True
@@ -232,17 +231,14 @@ class WhatAPI:
             form['release_desc'] = release_desc
 
         return self.session.submit_selected()
-        #_, data, headers = form.click_request_data()
-        #return self.session.post(url, data=data, headers=dict(headers))
 
     def set_24bit(self, torrent):
         url = '{0}/torrents.php?action=edit&id={1}'.format(self.endpoint, torrent['id'])
-        response = self.session.get(url)
-        forms = mechanize.ParseFile(StringIO(response.text.encode('utf-8')), url)
-        form = forms[-3]
-        form.find_control('bitrate').set('1', '24bit Lossless')
-        _, data, headers = form.click_request_data()
-        return self.session.post(url, data=data, headers=dict(headers))
+        self.session.open(url)
+        form = self.session.select_form(selector='.create_form')
+        form['bitrate'] = '24bit Lossless'
+
+        return self.session.submit_selected()
 
     def release_url(self, group, torrent):
         return '{0}/torrents.php?id={1}&torrentid={2}#torrent{3}'.format(self.endpoint, group['group']['id'], torrent['id'], torrent['id'])
