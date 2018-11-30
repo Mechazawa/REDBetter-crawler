@@ -141,7 +141,7 @@ def main():
     api = whatapi.WhatAPI(username, password, endpoint)
 
     try:
-        seen = pickle.load(open(args.cache))
+        seen = pickle.load(open(args.cache, 'rb'))
     except:
         seen = set()
         pickle.dump(seen, open(args.cache, 'wb'))
