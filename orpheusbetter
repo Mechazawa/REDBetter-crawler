@@ -67,6 +67,7 @@ def main():
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
     parser.add_argument('-m', '--mode', help='mode to search for transcode candidates; snatched, uploaded, both, seeding, or all')
     parser.add_argument('-S', '--skip', action='store_true', help="treats a torrent as already processed")
+    parser.add_argument('-t', '--totp', help="time based one time password for 2FA", default=None)
 
     args = parser.parse_args()
 
@@ -138,7 +139,7 @@ def main():
     upload_torrent = not args.no_upload
 
     print("Logging in to Orpheus Network...")
-    api = whatapi.WhatAPI(username, password, endpoint)
+    api = whatapi.WhatAPI(username, password, endpoint, args.totp)
 
     try:
         seen = pickle.load(open(args.cache, 'rb'))

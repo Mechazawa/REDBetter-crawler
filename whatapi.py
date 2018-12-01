@@ -66,12 +66,13 @@ class RequestException(Exception):
     pass
 
 class WhatAPI:
-    def __init__(self, username=None, password=None, endpoint=None):
+    def __init__(self, username=None, password=None, endpoint=None, totp=None):
         self.session = mechanicalsoup.StatefulBrowser()
         self.session.session.headers.update(headers)
         self.browser = None
         self.username = username
         self.password = password
+        self.totp = totp
         if endpoint:
             self.endpoint = endpoint
         else:
@@ -91,6 +92,12 @@ class WhatAPI:
         r = self.session.post(loginpage, data=data)
         if r.status_code != 200:
             raise LoginException
+        if self.totp:
+            params = {'act': '2fa'}
+            data = {'2fa': self.totp}
+            r = self.session.post(loginpage, params=params, data=data)
+            if r.status_code != 200:
+                raise LoginException
         accountinfo = self.request('index')
         self.authkey = accountinfo['authkey']
         self.passkey = accountinfo['passkey']
@@ -167,7 +174,7 @@ class WhatAPI:
         if media == lossless_media:
             media_params = ['']
         else:
-            media_params = ['&media=[0}'.format(media_search_map[m]) for m in media]
+            media_params = ['&media={0}'.format(media_search_map[m]) for m in media]
 
         if mode == 'snatched' or mode == 'both' or mode == 'all':
             url = '{0}/torrents.php?type=snatched&userid={1}&format=FLAC'.format(self.endpoint, self.userid)
