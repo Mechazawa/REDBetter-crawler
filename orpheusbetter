@@ -197,7 +197,7 @@ def main():
             if not os.path.exists(flac_file):
                 print("Path not found - skipping: {0}".format(flac_file))
                 continue
-            flac_dir = os.path.join(data_dir, "[0} ({1}) [FLAC]".format(
+            flac_dir = os.path.join(data_dir, "{0} ({1}) [FLAC]".format(
                 whatapi.unescape(group['group']['name']), group['group']['year']))
             if not os.path.exists(flac_dir):
                 os.makedirs(flac_dir)
