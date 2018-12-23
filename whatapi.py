@@ -216,7 +216,8 @@ class WhatAPI:
         url = '{0}/upload.php?groupid={1}'.format(self.endpoint, group['group']['id'])
         self.session.open(url)
         form = self.session.select_form(selector='.create_form')
-        form['file_input'] = new_torrent
+        # requests encodes using rfc2231 in python 3 which php doesn't understand
+        files = {'file_input': ('1.torrent', open(new_torrent, 'rb'), 'application/x-bittorrent')}
         if torrent['remastered']:
             form['remaster'] = True
             form['remaster_year'] = str(torrent['remasterYear'])
@@ -237,7 +238,7 @@ class WhatAPI:
         if release_desc:
             form['release_desc'] = release_desc
 
-        return self.session.submit_selected()
+        return self.session.submit_selected(files=files)
 
     def set_24bit(self, torrent):
         url = '{0}/torrents.php?action=edit&id={1}'.format(self.endpoint, torrent['id'])
