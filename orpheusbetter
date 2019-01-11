@@ -7,6 +7,7 @@ import shutil
 import sys
 import tempfile
 import traceback
+from distutils.version import StrictVersion
 from urllib.parse import urlparse, parse_qsl
 from multiprocessing import cpu_count
 
@@ -68,6 +69,7 @@ def main():
     parser.add_argument('-m', '--mode', help='mode to search for transcode candidates; snatched, uploaded, both, seeding, or all')
     parser.add_argument('-S', '--skip', action='store_true', help="treats a torrent as already processed")
     parser.add_argument('-t', '--totp', help="time based one time password for 2FA", default=None)
+    parser.add_argument('-o', '--source', help="the value to put in the source flag in created torrents")
 
     args = parser.parse_args()
 
@@ -90,6 +92,7 @@ def main():
         config.set('orpheus', 'tracker', 'https://home.opsfet.ch/')
         config.set('orpheus', 'mode', 'both')
         config.set('orpheus', 'api', 'https://orpheus.network')
+        config.set('orpheus', 'source', 'OPS')
         config.write(open(args.config, 'w'))
         print("Please edit the configuration file: {0}".format(args.config))
         sys.exit(2)
@@ -132,9 +135,33 @@ def main():
             config.set('orpheus', 'api', 'https://orpheus.network')
             config.write(open(args.config, 'w'))
             print("API endpoint set to https://orpheus.network")
+
+        version_path = os.path.join(os.path.expanduser('~'), '.orpheusbetter', '.version')
+        if os.path.isfile(version_path):
+            with open(version_path, 'r') as f:
+                version = f.read()
+        else:
+            version = "1.0.0"
+
+        if StrictVersion(version) < StrictVersion(__version__):
+            updated = False
+            if StrictVersion(version) < StrictVersion('2.0.1'):
+                updated = True
+                config.set('orpheus', 'source', 'OPS')
+
+            if updated:
+                config.write(open(args.config, 'w'))
+                print("Migrated version {0} config".format(version))
+
+            with open(version_path, 'w') as f:
+                f.write(__version__)
+
         tracker = config.get('orpheus', 'tracker')
         mode  = config.get('orpheus', 'mode')
         endpoint = config.get('orpheus', 'api')
+        source = None
+        if config.has_option('orpheus', 'source'):
+            source = config.get('orpheus', 'source')
 
     upload_torrent = not args.no_upload
 
@@ -267,7 +294,7 @@ def main():
 
                 try:
                     transcode_dir = transcode.transcode_release(flac_dir, local_output_dir, format, max_threads=args.threads)
-                    new_torrent = transcode.make_torrent(transcode_dir, tmpdir, tracker, api.passkey)
+                    new_torrent = transcode.make_torrent(transcode_dir, tmpdir, tracker, api.passkey, source)
                     if upload_torrent:
                         permalink = api.permalink(torrent)
                         description = create_description(torrent, flac_dir, format, permalink)

@@ -6,7 +6,7 @@ files to Orpheus.
 
 The following command will scan through every FLAC you have ever
 downloaded or uploaded (if it is in , determine which formats are needed, transcode
-the FLAC to each needed format, and upload each format to Apollo -- automatically.
+the FLAC to each needed format, and upload each format to Orpheus -- automatically.
 
     $ orpheusbetter
 
