@@ -16,19 +16,19 @@ Installation
 You're going to need to install a few dependencies before using
 orpheusbetter.
 
-First and foremost, you will need Python 2.7 or newer. Will not run on Python 3
-as requests is only available for Python 2.x.
+First and foremost, you will need Python 3.6 or newer. NOTE: this version
+has been ported to Python 3.x and will not run under Python 2.x.
 
 Once you've got Python installed, you will need a few modules: mechanize,
 mutagen, and requests. Try this:
 
-    $ pip install -r requirements.txt
+    $ pip3 install -r requirements.txt
 
 	
 If you are on a seedbox, or a system without root priviliages, try this:
 
 
-    $ pip install --user -r requirements.txt
+    $ pip3 install --user -r requirements.txt
 
 
 Furthermore, you need several external programs: mktorrent 1.1+, flac,

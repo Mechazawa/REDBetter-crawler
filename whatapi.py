@@ -1,12 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import re
 import os
 import json
 import time
-import requests
-import mechanize
-import HTMLParser
-from cStringIO import StringIO
+import mechanicalsoup
+import html
 
 headers = {
     'Connection': 'keep-alive',
@@ -68,11 +66,13 @@ class RequestException(Exception):
     pass
 
 class WhatAPI:
-    def __init__(self, username=None, password=None, endpoint=None):
-        self.session = requests.Session()
-        self.session.headers.update(headers)
+    def __init__(self, username=None, password=None, endpoint=None, totp=None):
+        self.session = mechanicalsoup.StatefulBrowser()
+        self.session.session.headers.update(headers)
+        self.browser = None
         self.username = username
         self.password = password
+        self.totp = totp
         if endpoint:
             self.endpoint = endpoint
         else:
@@ -86,26 +86,32 @@ class WhatAPI:
 
     def _login(self):
         '''Logs in user and gets authkey from server'''
-        loginpage = '{}/login.php'.format(self.endpoint)
+        loginpage = '{0}/login.php'.format(self.endpoint)
         data = {'username': self.username,
                 'password': self.password}
         r = self.session.post(loginpage, data=data)
         if r.status_code != 200:
             raise LoginException
+        if self.totp:
+            params = {'act': '2fa'}
+            data = {'2fa': self.totp}
+            r = self.session.post(loginpage, params=params, data=data)
+            if r.status_code != 200:
+                raise LoginException
         accountinfo = self.request('index')
         self.authkey = accountinfo['authkey']
         self.passkey = accountinfo['passkey']
         self.userid = accountinfo['id']
 
     def logout(self):
-        self.session.get('{}/logout.php?auth={}'.format(self.endpoint, self.authkey))
+        self.session.get('{0}/logout.php?auth={1}'.format(self.endpoint, self.authkey))
 
     def request(self, action, **kwargs):
         '''Makes an AJAX request at a given action page'''
         while time.time() - self.last_request < self.rate_limit:
             time.sleep(0.1)
 
-        ajaxpage = '{}/ajax.php'.format(self.endpoint)
+        ajaxpage = '{0}/ajax.php'.format(self.endpoint)
         params = {'action': action}
         if self.authkey:
             params['auth'] = self.authkey
@@ -124,7 +130,7 @@ class WhatAPI:
         while time.time() - self.last_request < self.rate_limit:
             time.sleep(0.1)
 
-        ajaxpage = '{}action'.format(self.endpoint)
+        ajaxpage = '{0}action'.format(self.endpoint)
         if self.authkey:
             kwargs['auth'] = self.authkey
         r = self.session.get(ajaxpage, params=kwargs, allow_redirects=False)
@@ -155,7 +161,7 @@ class WhatAPI:
 
     def get_candidates(self, mode, skip=None, media=lossless_media):
         if not media.issubset(lossless_media):
-            raise ValueError('Unsupported media type %s' % (media - lossless_media).pop())
+            raise ValueError('Unsupported media type {0}'.format((media - lossless_media).pop()))
 
         if not any(s == mode for s in ('snatched', 'uploaded', 'both', 'all', 'seeding')):
             raise ValueError('Unsupported candidate mode {0}'.format(mode))
@@ -168,16 +174,16 @@ class WhatAPI:
         if media == lossless_media:
             media_params = ['']
         else:
-            media_params = ['&media=%s' % media_search_map[m] for m in media]
+            media_params = ['&media={0}'.format(media_search_map[m]) for m in media]
 
         if mode == 'snatched' or mode == 'both' or mode == 'all':
-            url = '{}/torrents.php?type=snatched&userid={}&format=FLAC'.format(self.endpoint, self.userid)
+            url = '{0}/torrents.php?type=snatched&userid={1}&format=FLAC'.format(self.endpoint, self.userid)
             for mp in media_params:
                 page = 1
                 done = False
                 pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)')
                 while not done:
-                    content = self.session.get(url + mp + "&page=%s" % page).text
+                    content = self.session.get(url + mp + "&page={0}".format(page)).text
                     for groupid, torrentid in pattern.findall(content):
                         if skip is None or torrentid not in skip:
                             yield int(groupid), int(torrentid)
@@ -185,13 +191,13 @@ class WhatAPI:
                     page += 1
 
         if mode == 'uploaded' or mode == 'both' or mode == 'all':
-            url = '{}/torrents.php?type=uploaded&userid={}&format=FLAC'.format(self.endpoint, self.userid)
+            url = '{0}/torrents.php?type=uploaded&userid={1}&format=FLAC'.format(self.endpoint, self.userid)
             for mp in media_params:
                 page = 1
                 done = False
                 pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)')
                 while not done:
-                    content = self.session.get(url + mp + "&page=%s" % page).text
+                    content = self.session.get(url + mp + "&page={0}".format(page)).text
                     for groupid, torrentid in pattern.findall(content):
                         if skip is None or torrentid not in skip:
                             yield int(groupid), int(torrentid)
@@ -199,7 +205,7 @@ class WhatAPI:
                     page += 1
 
         if mode == 'seeding' or mode == 'all':
-            url = '{}/better.php?method=snatch&filter=seeding'.format(self.endpoint)
+            url = '{0}/better.php?method=snatch&filter=seeding'.format(self.endpoint)
             pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)#torrent\d+')
             content = self.session.get(url).text
             for groupid, torrentid in pattern.findall(content):
@@ -207,13 +213,13 @@ class WhatAPI:
                     yield int(groupid), int(torrentid)
 
     def upload(self, group, torrent, new_torrent, format, description=[]):
-        url = '{}/upload.php?groupid={}'.format(self.endpoint, group['group']['id'])
-        response = self.session.get(url)
-        forms = mechanize.ParseFile(StringIO(response.text.encode('utf-8')), url)
-        form = forms[-1]
-        form.find_control('file_input').add_file(open(new_torrent), 'application/x-bittorrent', os.path.basename(new_torrent))
+        url = '{0}/upload.php?groupid={1}'.format(self.endpoint, group['group']['id'])
+        self.session.open(url)
+        form = self.session.select_form(selector='.create_form')
+        # requests encodes using rfc2231 in python 3 which php doesn't understand
+        files = {'file_input': ('1.torrent', open(new_torrent, 'rb'), 'application/x-bittorrent')}
         if torrent['remastered']:
-            form.find_control('remaster').set_single('1')
+            form['remaster'] = True
             form['remaster_year'] = str(torrent['remasterYear'])
             form['remaster_title'] = torrent['remasterTitle']
             form['remaster_record_label'] = torrent['remasterRecordLabel']
@@ -224,34 +230,32 @@ class WhatAPI:
             form['remaster_record_label'] = ''
             form['remaster_catalogue_number'] = ''
 
-        form.find_control('format').set('1', formats[format]['format'])
-        form.find_control('bitrate').set('1', formats[format]['encoding'])
-        form.find_control('media').set('1', torrent['media'])
+        form['format'] = formats[format]['format']
+        form['bitrate'] = formats[format]['encoding']
+        form['media'] = torrent['media']
 
         release_desc = '\n'.join(description)
         if release_desc:
             form['release_desc'] = release_desc
 
-        _, data, headers = form.click_request_data()
-        return self.session.post(url, data=data, headers=dict(headers))
+        return self.session.submit_selected(files=files)
 
     def set_24bit(self, torrent):
-        url = '{}/torrents.php?action=edit&id={}'.format(self.endpoint, torrent['id'])
-        response = self.session.get(url)
-        forms = mechanize.ParseFile(StringIO(response.text.encode('utf-8')), url)
-        form = forms[-3]
-        form.find_control('bitrate').set('1', '24bit Lossless')
-        _, data, headers = form.click_request_data()
-        return self.session.post(url, data=data, headers=dict(headers))
+        url = '{0}/torrents.php?action=edit&id={1}'.format(self.endpoint, torrent['id'])
+        self.session.open(url)
+        form = self.session.select_form(selector='.create_form')
+        form['bitrate'] = '24bit Lossless'
+
+        return self.session.submit_selected()
 
     def release_url(self, group, torrent):
-        return '{}/torrents.php?id={}&torrentid={}#torrent{}'.format(self.endpoint, group['group']['id'], torrent['id'], torrent['id'])
+        return '{0}/torrents.php?id={1}&torrentid={2}#torrent{3}'.format(self.endpoint, group['group']['id'], torrent['id'], torrent['id'])
 
     def permalink(self, torrent):
-        return '{}/torrents.php?torrentid={}'.format(self.endpoint, torrent['id'])
+        return '{0}/torrents.php?torrentid={1}'.format(self.endpoint, torrent['id'])
 
     def get_better(self, type=3):
-        p = re.compile(ur'(torrents\.php\?action=download&(?:amp;)?id=(\d+)[^"]*).*(torrents\.php\?id=\d+(?:&amp;|&)torrentid=\2\#torrent\d+)', re.DOTALL)
+        p = re.compile(r'(torrents\.php\?action=download&(?:amp;)?id=(\d+)[^"]*).*(torrents\.php\?id=\d+(?:&amp;|&)torrentid=\2\#torrent\d+)', re.DOTALL)
         out = []
         data = self.request_html('better.php', method='transcode', type=type)
         for torrent, id, perma in p.findall(data):
@@ -267,7 +271,7 @@ class WhatAPI:
         while time.time() - self.last_request < self.rate_limit:
             time.sleep(0.1)
 
-        torrentpage = '{}/torrents.php'.format(self.endpoint)
+        torrentpage = '{0}/torrents.php'.format(self.endpoint)
         params = {'action': 'download', 'id': torrent_id}
         if self.authkey:
             params['authkey'] = self.authkey
@@ -283,4 +287,4 @@ class WhatAPI:
         return self.request('torrent', id=id)['torrent']
 
 def unescape(text):
-    return HTMLParser.HTMLParser().unescape(text)
+    return html.unescape(text)
