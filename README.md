@@ -68,6 +68,7 @@ like this:
     tracker = https://home.opsfet.ch/
     api = https://orpheus.network
     mode = both
+    source = OPS
 
 `username` and `password` are your Orpheus login credentials. 
 
@@ -106,6 +107,9 @@ a prompt will appear. The default is '0' which ignores these occurrences.
  - `all`      - All transcode sources above.
  - `none`     - Disable scraping.
 
+ `source` is the source flag to put on created torrents, leave blank if you're
+ running mktorrent 1.0.
+
 You should end up with something like this:
 
     [whatcd]
@@ -120,6 +124,7 @@ You should end up with something like this:
     tracker = https://home.opsfet.ch/
     api = https://orpheus.network
     mode = both
+    source = OPS
 
 Alright! Now you're ready to use orpheusbetter.
 
@@ -128,8 +133,9 @@ Usage
 
 ```
 usage: orpheusbetter [-h] [-s] [-j THREADS] [--config CONFIG] [--cache CACHE]
-                    [-U] [-E] [--version] [-m MODE] [-S]
-                    [release_urls [release_urls ...]]
+                     [-U] [-E] [--version] [-m MODE] [-S] [-t TOTP]
+                     [-o SOURCE]
+                     [release_urls [release_urls ...]]
 
 positional arguments:
   release_urls          the URL where the release is located (default: None)
@@ -152,6 +158,10 @@ optional arguments:
   -m MODE, --mode MODE  mode to search for transcode candidates; snatched,
                         uploaded, both, seeding, or all (default: None)
   -S, --skip            treats a torrent as already processed (default: False)
+  -t TOTP, --totp TOTP  time based one time password for 2FA (default: None)
+  -o SOURCE, --source SOURCE
+                        the value to put in the source flag in created
+                        torrents (default: None)
 ```
 
 Examples
