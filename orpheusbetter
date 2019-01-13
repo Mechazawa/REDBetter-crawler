@@ -100,13 +100,13 @@ def main():
         username = config.get('orpheus', 'username')
         password = config.get('orpheus', 'password')
         do_24_bit = config.get('orpheus', '24bit_behaviour')
-        data_dir = os.path.expanduser(config.get('orpheus', 'data_dir'))
+        data_dir = [os.path.expanduser(d) for d in config.get('orpheus', 'data_dir').split(';')]
         try:
             output_dir = os.path.expanduser(config.get('orpheus', 'output_dir'))
         except configparser.NoOptionError:
             output_dir = None
         if not output_dir:
-            output_dir = data_dir
+            output_dir = data_dir[0]
         torrent_dir = os.path.expanduser(config.get('orpheus', 'torrent_dir'))
         supported_formats = [format.strip().upper() for format in config.get('orpheus', 'formats').split(',')]
 
@@ -214,23 +214,31 @@ def main():
 
         release = "Release found: {0} ({1})".format(whatapi.unescape(group['group']['name']), group['group']['year'])
         releaseurl = "Release URL: {0}".format(api.release_url(group, torrent))
-        
+
         print("")
         print(release)
         print(releaseurl)
 
         if not torrent['filePath']:
-            flac_file = os.path.join(data_dir, whatapi.unescape(torrent['fileList']).split('{{{')[0])
+            for d in data_dir:
+                flac_file = os.path.join(d, whatapi.unescape(torrent['fileList']).split('{{{')[0])
+                if not os.path.exists(flac_file):
+                    continue
+                flac_dir = os.path.join(d, "{0} ({1}) [FLAC]".format(
+                    whatapi.unescape(group['group']['name']), group['group']['year']))
+                if not os.path.exists(flac_dir):
+                    os.makedirs(flac_dir)
+                shutil.copy(flac_file, flac_dir)
+                break
+
             if not os.path.exists(flac_file):
                 print("Path not found - skipping: {0}".format(flac_file))
                 continue
-            flac_dir = os.path.join(data_dir, "{0} ({1}) [FLAC]".format(
-                whatapi.unescape(group['group']['name']), group['group']['year']))
-            if not os.path.exists(flac_dir):
-                os.makedirs(flac_dir)
-            shutil.copy(flac_file, flac_dir)
         else:
-            flac_dir = os.path.join(data_dir, whatapi.unescape(torrent['filePath']))
+            for d in data_dir:
+                flac_dir = os.path.join(d, whatapi.unescape(torrent['filePath']))
+                if os.path.exists(flac_dir):
+                    break
 
         #flac_dir = flac_dir.encode(sys.getfilesystemencoding())
         if int(do_24_bit):
