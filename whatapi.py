@@ -216,8 +216,16 @@ class WhatAPI:
         url = '{0}/upload.php?groupid={1}'.format(self.endpoint, group['group']['id'])
         self.session.open(url)
         form = self.session.select_form(selector='.create_form')
+
         # requests encodes using rfc2231 in python 3 which php doesn't understand
         files = {'file_input': ('1.torrent', open(new_torrent, 'rb'), 'application/x-bittorrent')}
+
+        # MechanicalSoup 0.12.0+ now overwrites files with blank if a matching form field
+        # exists and is not disabled.
+        torrent_field = form.form.find('input', attrs={'id': 'file'})
+        if torrent_field:
+            torrent_field.attrs['disabled'] = 'disabled'
+
         if torrent['remastered']:
             form['remaster'] = True
             form['remaster_year'] = str(torrent['remasterYear'])
