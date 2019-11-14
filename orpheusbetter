@@ -16,6 +16,8 @@ import transcode
 import whatapi
 from _version import __version__
 
+if sys.version_info < (3, 6, 0):
+    raise Exception("Requires Python 3.6.0 or newer")
 
 def banner():
     return "Created with version of orpheusbetter-crawler {0}. Maintained by  ApexWeed\n" \
