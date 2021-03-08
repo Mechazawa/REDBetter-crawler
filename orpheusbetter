@@ -42,6 +42,7 @@ def create_description(torrent, flac_dir, format, permalink):
     return description
 
 def formats_needed(group, torrent, supported_formats):
+    if '' in supported_formats: supported_formats.remove('')
     same_group = lambda t: t['media'] == torrent['media'] and\
                            t['remasterYear'] == torrent['remasterYear'] and\
                            t['remasterTitle'] == torrent['remasterTitle'] and\
