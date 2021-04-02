@@ -86,6 +86,7 @@ class WhatAPI:
 
     def _login(self):
         '''Logs in user and gets authkey from server'''
+        loginpage = '{0}/login.php'.format(self.endpoint)
         if self.endpoint == "https://orpheus.network":
             self.session.open('https://orpheus.network/login.php')
             self.session.select_form()
