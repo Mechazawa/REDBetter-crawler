@@ -94,6 +94,7 @@ class WhatAPI:
             self.session['keeplogged'] = '1'
             r = self.session.submit_selected()
         else:
+            loginpage = '{0}/login.php'.format(self.endpoint)
             data = {'username': self.username,
                     'password': self.password}
             r = self.session.post(loginpage, data=data)
