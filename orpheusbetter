@@ -255,7 +255,7 @@ def main():
                         print("Release is actually 24-bit lossless, skipping.")
                         continue
                     if int(do_24_bit) == 1:  
-                        confirmation = raw_input("Mark release as 24bit lossless? y/n: ")
+                        confirmation = input("Mark release as 24bit lossless? y/n: ")
                         if confirmation != 'y':
                             continue
                     print("Marking release as 24bit lossless.")
