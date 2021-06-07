@@ -86,18 +86,10 @@ class WhatAPI:
 
     def _login(self):
         '''Logs in user and gets authkey from server'''
-        if self.endpoint == "https://orpheus.network":
-            self.session.open('https://orpheus.network/login.php')
-            self.session.select_form()
-            self.session['username'] = self.username
-            self.session['password'] = self.password
-            self.session['keeplogged'] = '1'
-            r = self.session.submit_selected()
-        else:
-            loginpage = '{0}/login.php'.format(self.endpoint)
-            data = {'username': self.username,
-                    'password': self.password}
-            r = self.session.post(loginpage, data=data)
+        loginpage = '{0}/login.php'.format(self.endpoint)
+        data = {'username': self.username,
+                'password': self.password}
+        r = self.session.post(loginpage, data=data)
         if r.status_code != 200:
             raise LoginException
         if self.totp:
