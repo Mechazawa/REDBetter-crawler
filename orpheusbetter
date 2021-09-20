@@ -89,7 +89,7 @@ def main():
         config.set('orpheus', 'data_dir', '')
         config.set('orpheus', 'output_dir', '')
         config.set('orpheus', 'torrent_dir', '')
-        config.set('orpheus', 'formats', 'flac, v0, 320, v2')
+        config.set('orpheus', 'formats', 'flac, v0, 320')
         config.set('orpheus', 'media', ', '.join(whatapi.lossless_media))
         config.set('orpheus', '24bit_behaviour','0')
         config.set('orpheus', 'tracker', 'https://home.opsfet.ch/')
