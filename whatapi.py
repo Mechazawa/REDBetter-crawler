@@ -205,8 +205,8 @@ class WhatAPI:
                     page += 1
 
         if mode == 'seeding' or mode == 'all':
-            url = '{0}/better.php?method=snatch&filter=seeding'.format(self.endpoint)
-            pattern = re.compile('torrents.php\?id=(\d+)&amp;torrentid=(\d+)#torrent\d+')
+            url = '{0}/better.php?method=transcode&filter=seeding'.format(self.endpoint)
+            pattern = re.compile('torrents.php\?groupId=(\d+)&torrentid=(\d+)#\d+')
             content = self.session.get(url).text
             for groupid, torrentid in pattern.findall(content):
                 if skip is None or torrentid not in skip:

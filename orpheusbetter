@@ -209,7 +209,6 @@ def main():
             print("No urls provided and scraping is disabled")
         else:
             candidates = api.get_candidates(args.mode, skip=seen, media=supported_media)
-        #candidates = api.snatched(skip=seen, media=supported_media)
 
     for groupid, torrentid in candidates:
         group = api.request('torrentgroup', id=groupid)
@@ -243,7 +242,6 @@ def main():
                 if os.path.exists(flac_dir):
                     break
 
-        #flac_dir = flac_dir.encode(sys.getfilesystemencoding())
         if int(do_24_bit):
             try:
                 if transcode.is_24bit(flac_dir) and torrent['encoding'] != '24bit Lossless':
