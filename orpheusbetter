@@ -7,7 +7,7 @@ import shutil
 import sys
 import tempfile
 import traceback
-from distutils.version import StrictVersion
+from packaging.version import Version
 from urllib.parse import urlparse, parse_qsl
 from multiprocessing import cpu_count
 
@@ -146,9 +146,9 @@ def main():
         else:
             version = "1.0.0"
 
-        if StrictVersion(version) < StrictVersion(__version__):
+        if Version(version) < Version(__version__):
             updated = False
-            if StrictVersion(version) < StrictVersion('2.0.1'):
+            if Version(version) < Version('2.0.1'):
                 updated = True
                 config.set('orpheus', 'source', 'OPS')
 
