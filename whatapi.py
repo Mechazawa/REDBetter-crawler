@@ -159,6 +159,14 @@ class WhatAPI:
         res['torrentgroup'] = keep_releases
         return res
 
+    def get_html(self, url):
+        while time.time() - self.last_request < self.rate_limit:
+            time.sleep(0.1)
+
+        r = self.session.get(url, allow_redirects=False)
+        self.last_request = time.time()
+        return r.text
+
     def get_candidates(self, mode, skip=None, media=lossless_media):
         if not media.issubset(lossless_media):
             raise ValueError('Unsupported media type {0}'.format((media - lossless_media).pop()))
@@ -183,7 +191,7 @@ class WhatAPI:
                 page = 1
                 done = False
                 while not done:
-                    content = self.session.get(url + mp + "&page={0}".format(page)).text
+                    content = self.get_html(url + mp + "&page={0}".format(page))
                     for torrentid, groupid in pattern.findall(content):
                         if skip is None or torrentid not in skip:
                             yield int(groupid), int(torrentid)
@@ -196,7 +204,7 @@ class WhatAPI:
                 page = 1
                 done = False
                 while not done:
-                    content = self.session.get(url + mp + "&page={0}".format(page)).text
+                    content = self.get_html(url + mp + "&page={0}".format(page))
                     for torrentid, groupid in pattern.findall(content):
                         if skip is None or torrentid not in skip:
                             yield int(groupid), int(torrentid)
@@ -206,7 +214,7 @@ class WhatAPI:
         if mode == 'seeding' or mode == 'all':
             url = '{0}/better.php?method=transcode&filter=seeding'.format(self.endpoint)
             pattern = re.compile('torrents.php\?groupId=(\d+)&torrentid=(\d+)#\d+')
-            content = self.session.get(url).text
+            content = self.get_html(url)
             for groupid, torrentid in pattern.findall(content):
                 if skip is None or torrentid not in skip:
                     yield int(groupid), int(torrentid)
